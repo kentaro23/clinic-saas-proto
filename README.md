@@ -5,12 +5,13 @@ LINE事前問診＋予約＋リマインドの「最速デモ用プロトタイ�
 ## 技術スタック
 - Next.js 14 (App Router) + TypeScript
 - TailwindCSS + shadcn/ui (簡易実装)
-- Prisma + SQLite
+- Prisma + PostgreSQL
 - zod
 
 ## セットアップ
 ```bash
 pnpm install
+export DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB?schema=public"
 pnpm prisma:generate
 pnpm prisma:migrate -- --name init
 pnpm prisma db seed
