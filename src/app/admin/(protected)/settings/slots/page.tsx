@@ -1,0 +1,274 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+type SlotRule = {
+  id: string;
+  weekday: number;
+  startTime: string;
+  endTime: string;
+  intervalMinutes: number;
+  capacity: number;
+};
+
+const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+
+export default function SlotSettingsPage() {
+  const [rules, setRules] = useState<SlotRule[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [bookingMode, setBookingMode] = useState<"time" | "session">("time");
+  const [savingMode, setSavingMode] = useState(false);
+  const [form, setForm] = useState({
+    weekday: 1,
+    startTime: "09:00",
+    endTime: "12:00",
+    intervalMinutes: 30,
+    capacity: 1
+  });
+
+  const fetchRules = async () => {
+    const response = await fetch("/api/admin/slot-rules");
+    const data = await response.json();
+    setRules(data.rules ?? []);
+  };
+
+  const fetchClinic = async () => {
+    const response = await fetch("/api/admin/clinic");
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    setBookingMode(data.clinic?.bookingMode ?? "time");
+  };
+
+  useEffect(() => {
+    fetchRules();
+    fetchClinic();
+  }, []);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    const method = editingId ? "PUT" : "POST";
+    const url = editingId ? `/api/admin/slot-rules/${editingId}` : "/api/admin/slot-rules";
+    await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form)
+    });
+    setLoading(false);
+    setEditingId(null);
+    await fetchRules();
+  };
+
+  const handleEdit = (rule: SlotRule) => {
+    setEditingId(rule.id);
+    setForm({
+      weekday: rule.weekday,
+      startTime: rule.startTime,
+      endTime: rule.endTime,
+      intervalMinutes: rule.intervalMinutes,
+      capacity: rule.capacity
+    });
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("この枠ルールを削除しますか？")) {
+      return;
+    }
+    await fetch(`/api/admin/slot-rules/${id}`, { method: "DELETE" });
+    await fetchRules();
+  };
+
+  const handleBookingModeChange = async (value: "time" | "session") => {
+    setBookingMode(value);
+    setSavingMode(true);
+    await fetch("/api/admin/clinic", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookingMode: value })
+    });
+    setSavingMode(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">枠設定</h1>
+        <p className="text-sm text-muted-foreground">
+          募集方式と曜日・時間帯・間隔・上限の設定を管理します。
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>募集方式</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="space-y-1">
+            <label className="text-sm font-medium">方式</label>
+            <Select
+              value={bookingMode}
+              onChange={(event) =>
+                handleBookingModeChange(event.target.value as "time" | "session")
+              }
+              disabled={savingMode}
+            >
+              <option value="time">時間ごとに募集</option>
+              <option value="session">午前/午後の部で募集</option>
+            </Select>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            午前/午後の部は、設定された時間帯をもとに自動で分割されます。
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{editingId ? "枠ルール編集" : "枠ルール追加"}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form className="grid gap-4 md:grid-cols-5" onSubmit={handleSubmit}>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">曜日</label>
+              <Select
+                value={String(form.weekday)}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, weekday: Number(event.target.value) }))
+                }
+              >
+                {weekdays.map((label, index) => (
+                  <option key={label} value={index}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">開始</label>
+              <Input
+                value={form.startTime}
+                onChange={(event) => setForm((prev) => ({ ...prev, startTime: event.target.value }))}
+                placeholder="09:00"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">終了</label>
+              <Input
+                value={form.endTime}
+                onChange={(event) => setForm((prev) => ({ ...prev, endTime: event.target.value }))}
+                placeholder="12:00"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">間隔(分)</label>
+              <Input
+                type="number"
+                value={form.intervalMinutes}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    intervalMinutes: Number(event.target.value)
+                  }))
+                }
+                min={5}
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">上限</label>
+              <Input
+                type="number"
+                value={form.capacity}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    capacity: Number(event.target.value)
+                  }))
+                }
+                min={1}
+                required
+              />
+            </div>
+            <div className="md:col-span-5 flex gap-2">
+              <Button type="submit" disabled={loading}>
+                {loading ? "保存中..." : editingId ? "更新" : "追加"}
+              </Button>
+              {editingId ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm({
+                      weekday: 1,
+                      startTime: "09:00",
+                      endTime: "12:00",
+                      intervalMinutes: 30,
+                      capacity: 1
+                    });
+                  }}
+                >
+                  キャンセル
+                </Button>
+              ) : null}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>枠ルール一覧</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {rules.length === 0 ? (
+            <p className="text-sm text-muted-foreground">枠ルールがありません。</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>曜日</TableHead>
+                  <TableHead>時間</TableHead>
+                  <TableHead>間隔</TableHead>
+                  <TableHead>上限</TableHead>
+                  <TableHead>操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rules.map((rule) => (
+                  <TableRow key={rule.id}>
+                    <TableCell>{weekdays[rule.weekday]}</TableCell>
+                    <TableCell>
+                      {rule.startTime} - {rule.endTime}
+                    </TableCell>
+                    <TableCell>{rule.intervalMinutes}分</TableCell>
+                    <TableCell>{rule.capacity}人</TableCell>
+                    <TableCell className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(rule)}>
+                        編集
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDelete(rule.id)}>
+                        削除
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

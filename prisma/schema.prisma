@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Clinic {
+  id           String        @id @default(cuid())
+  name         String
+  bookingMode  String        @default("time")
+  createdAt    DateTime      @default(now())
+  slotRules    SlotRule[]
+  reservations Reservation[]
+}
+
+model SlotRule {
+  id              String   @id @default(cuid())
+  clinicId        String
+  clinic          Clinic   @relation(fields: [clinicId], references: [id])
+  weekday         Int
+  startTime       String
+  endTime         String
+  intervalMinutes Int
+  capacity        Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Reservation {
+  id          String            @id @default(cuid())
+  clinicId    String
+  clinic      Clinic            @relation(fields: [clinicId], references: [id])
+  patientName String
+  patientPhone String
+  purpose     String
+  cardNumber  String?
+  slotStart   DateTime
+  status      String            @default("booked")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  intakeAnswer IntakeAnswer?
+  messageLogs  MessageLog[]
+}
+
+model IntakeAnswer {
+  id            String      @id @default(cuid())
+  reservationId String      @unique
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  answers       String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model MessageLog {
+  id            String      @id @default(cuid())
+  reservationId String?
+  reservation   Reservation? @relation(fields: [reservationId], references: [id])
+  type          String
+  channel       String
+  payload       String
+  sentAt        DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+}
