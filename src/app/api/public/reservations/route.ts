@@ -38,11 +38,12 @@ export async function POST(request: Request) {
     }
   });
 
+  const bookingMode = clinic.bookingMode === "session" ? "session" : "time";
   const slots = calculateSlots({
     date: slotStart,
     rules,
     reservations,
-    mode: clinic.bookingMode
+    mode: bookingMode
   });
   const targetSlot = slots.find(
     (slot) => slot.slotStart.getTime() === slotStart.getTime()

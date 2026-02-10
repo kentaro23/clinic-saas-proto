@@ -28,16 +28,17 @@ export async function GET(request: Request) {
     }
   });
 
+  const bookingMode = clinic.bookingMode === "session" ? "session" : "time";
   const slots = calculateSlots({
     date: targetDate,
     rules,
     reservations,
-    mode: clinic.bookingMode
+    mode: bookingMode
   });
 
   return NextResponse.json({
     date: dateParam,
-    mode: clinic.bookingMode,
+    mode: bookingMode,
     slots: slots.map((slot) => ({
       slotStart: slot.slotStart.toISOString(),
       remaining: slot.remaining,
