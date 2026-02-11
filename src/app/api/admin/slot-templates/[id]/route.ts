@@ -31,7 +31,9 @@ export async function POST(_: Request, { params }: Params) {
     return NextResponse.json({ error: "Template not found" }, { status: 404 });
   }
 
-  const rules = Array.isArray(template.rules) ? template.rules : [];
+  const rules = Array.isArray(template.rules)
+    ? template.rules.filter((rule) => rule != null)
+    : [];
   if (rules.length === 0) {
     return NextResponse.json({ error: "Template empty" }, { status: 400 });
   }
