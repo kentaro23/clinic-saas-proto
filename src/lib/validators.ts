@@ -5,6 +5,7 @@ export const reservationCreateSchema = z.object({
   patientPhone: z.string().min(6),
   purpose: z.enum(["first", "followup"]),
   cardNumber: z.string().optional(),
+  lineUserId: z.string().optional(),
   slotStart: z.string().datetime(),
   clinicId: z.string().optional()
 }).refine(

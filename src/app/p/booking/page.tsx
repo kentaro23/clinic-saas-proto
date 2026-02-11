@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,17 @@ type Slot = {
   label?: string | null;
 };
 
+declare global {
+  interface Window {
+    liff?: {
+      init: (options: { liffId: string }) => Promise<void>;
+      isLoggedIn: () => boolean;
+      login: () => void;
+      getProfile: () => Promise<{ userId: string }>;
+    };
+  }
+}
+
 export default function BookingPage() {
   const router = useRouter();
   const [date, setDate] = useState(toDateOnlyString(new Date()));
@@ -28,7 +40,8 @@ export default function BookingPage() {
     patientName: "",
     patientPhone: "",
     purpose: "first",
-    cardNumber: ""
+    cardNumber: "",
+    lineUserId: ""
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +58,26 @@ export default function BookingPage() {
     fetchSlots(date);
     setSelectedSlot(null);
   }, [date]);
+
+  useEffect(() => {
+    const initLiff = async () => {
+      const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+      if (!liffId || !window.liff) return;
+      try {
+        await window.liff.init({ liffId });
+        if (!window.liff.isLoggedIn()) {
+          window.liff.login();
+          return;
+        }
+        const profile = await window.liff.getProfile();
+        setForm((prev) => ({ ...prev, lineUserId: profile.userId }));
+      } catch (error) {
+        console.error("LIFF init failed", error);
+      }
+    };
+
+    initLiff();
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -80,6 +113,10 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-muted/40 px-4 py-10">
+      <Script
+        src="https://static.line-scdn.net/liff/edge/2/sdk.js"
+        strategy="beforeInteractive"
+      />
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <div>
           <h1 className="text-2xl font-semibold">予約フォーム</h1>

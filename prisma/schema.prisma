@@ -37,6 +37,7 @@ model Reservation {
   patientPhone String
   purpose     String
   cardNumber  String?
+  lineUserId  String?
   slotStart   DateTime
   status      String            @default("booked")
   createdAt   DateTime          @default(now())

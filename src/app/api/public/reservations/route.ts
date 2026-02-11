@@ -60,6 +60,7 @@ export async function POST(request: Request) {
       patientPhone: parsed.data.patientPhone,
       purpose: parsed.data.purpose,
       cardNumber: parsed.data.cardNumber?.trim() || null,
+      lineUserId: parsed.data.lineUserId?.trim() || null,
       slotStart
     }
   });
