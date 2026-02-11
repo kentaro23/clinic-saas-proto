@@ -23,6 +23,7 @@ declare global {
     liff?: {
       init: (options: { liffId: string }) => Promise<void>;
       isLoggedIn: () => boolean;
+      isInClient?: () => boolean;
       login: () => void;
       getProfile: () => Promise<{ userId: string }>;
     };
@@ -64,10 +65,25 @@ export default function BookingPage() {
       const liffId =
         process.env.NEXT_PUBLIC_LIFF_BOOKING_ID ??
         process.env.NEXT_PUBLIC_LIFF_ID;
-      if (!liffId || !window.liff) return;
+      if (!liffId) return;
       try {
+        await new Promise<void>((resolve, reject) => {
+          const startedAt = Date.now();
+          const timer = setInterval(() => {
+            if (window.liff) {
+              clearInterval(timer);
+              resolve();
+              return;
+            }
+            if (Date.now() - startedAt > 3000) {
+              clearInterval(timer);
+              reject(new Error("LIFF SDKが読み込めませんでした。"));
+            }
+          }, 100);
+        });
+
         await window.liff.init({ liffId });
-        if (!window.liff.isLoggedIn()) {
+        if (!window.liff.isLoggedIn() && !window.liff.isInClient?.()) {
           window.liff.login();
           return;
         }
