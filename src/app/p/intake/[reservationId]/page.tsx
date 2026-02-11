@@ -20,6 +20,8 @@ export default function IntakePage() {
   const params = useParams<{ reservationId: string }>();
   const reservationId = params?.reservationId as string;
   const [reservation, setReservation] = useState<Reservation | null>(null);
+  const [queuePosition, setQueuePosition] = useState<number | null>(null);
+  const [queueTotal, setQueueTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
@@ -37,7 +39,9 @@ export default function IntakePage() {
     const fetchReservation = async () => {
       const response = await fetch(`/api/public/reservations/${reservationId}`);
       const data = await response.json();
-      setReservation(data);
+      setReservation(data.reservation ?? null);
+      setQueuePosition(data.queuePosition ?? null);
+      setQueueTotal(data.queueTotal ?? null);
       setLoading(false);
     };
 
@@ -76,6 +80,31 @@ export default function IntakePage() {
             {reservation.patientName} 様 / {formatDateTime(new Date(reservation.slotStart))}
           </p>
         </div>
+
+        {queueTotal ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>待ち状況</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                全{queueTotal}人中 {queuePosition ?? "-"}番目
+              </p>
+              <div className="h-2 w-full rounded bg-muted">
+                <div
+                  className="h-2 rounded bg-primary"
+                  style={{
+                    width: `${
+                      queuePosition && queueTotal
+                        ? Math.round((queuePosition / queueTotal) * 100)
+                        : 0
+                    }%`
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
         {submitted ? (
           <Card>

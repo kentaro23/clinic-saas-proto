@@ -83,3 +83,63 @@ export async function POST(request: Request) {
     intakeUrl: `/p/intake/${reservation.id}`
   });
 }
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const lineUserId = searchParams.get("lineUserId");
+
+  if (!lineUserId) {
+    return NextResponse.json({ error: "lineUserId required" }, { status: 400 });
+  }
+
+  const reservations = await prisma.reservation.findMany({
+    where: { lineUserId },
+    orderBy: { slotStart: "desc" }
+  });
+
+  const dateStrs = Array.from(
+    new Set(reservations.map((reservation) => toJstDateString(reservation.slotStart)))
+  );
+
+  const queueMap = new Map<string, { position: number; total: number }>();
+  for (const dateStr of dateStrs) {
+    const { start, end } = getJstDayRange(dateStr);
+    const dayReservations = await prisma.reservation.findMany({
+      where: {
+        status: "booked",
+        slotStart: {
+          gte: start,
+          lte: end
+        }
+      },
+      select: { id: true, queueNumber: true, slotStart: true }
+    });
+
+    const sorted = [...dayReservations].sort((a, b) => {
+      if (a.queueNumber != null && b.queueNumber != null) {
+        return a.queueNumber - b.queueNumber;
+      }
+      return a.slotStart.getTime() - b.slotStart.getTime();
+    });
+
+    const total = sorted.length;
+    sorted.forEach((reservation, index) => {
+      queueMap.set(reservation.id, { position: index + 1, total });
+    });
+  }
+
+  return NextResponse.json({
+    reservations: reservations.map((reservation) => {
+      const queueInfo = queueMap.get(reservation.id);
+      return {
+        id: reservation.id,
+        patientName: reservation.patientName,
+        slotStart: reservation.slotStart.toISOString(),
+        status: reservation.status,
+        queueNumber: reservation.queueNumber,
+        queuePosition: queueInfo?.position ?? null,
+        queueTotal: queueInfo?.total ?? null
+      };
+    })
+  });
+}

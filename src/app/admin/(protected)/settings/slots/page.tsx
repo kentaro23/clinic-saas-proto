@@ -144,7 +144,7 @@ export default function SlotSettingsPage() {
       return;
     }
     setError(null);
-    const response = await fetch(`/api/admin/slot-templates/${selectedTemplateId}/apply`, {
+    const response = await fetch(`/api/admin/slot-templates/${selectedTemplateId}`, {
       method: "POST"
     });
     if (!response.ok) {

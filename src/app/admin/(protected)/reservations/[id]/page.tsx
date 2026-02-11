@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getJstDayRange, toJstDateString } from "@/lib/dates";
 import { formatDateTime, formatVisitPurpose } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
@@ -23,6 +24,43 @@ export default async function AdminReservationDetailPage({
   if (!reservation) {
     notFound();
   }
+
+  const dateStr = toJstDateString(reservation.slotStart);
+  const { start, end } = getJstDayRange(dateStr);
+  const dayReservations = await prisma.reservation.findMany({
+    where: {
+      status: "booked",
+      slotStart: {
+        gte: start,
+        lte: end
+      }
+    },
+    select: { id: true, queueNumber: true, slotStart: true }
+  });
+  const sorted = [...dayReservations].sort((a, b) => {
+    if (a.queueNumber != null && b.queueNumber != null) {
+      return a.queueNumber - b.queueNumber;
+    }
+    return a.slotStart.getTime() - b.slotStart.getTime();
+  });
+  const queueTotal = sorted.length;
+  const queuePosition =
+    sorted.findIndex((entry) => entry.id === reservation.id) + 1;
+  const queuePercent =
+    queueTotal > 0 && queuePosition > 0
+      ? Math.round((queuePosition / queueTotal) * 100)
+      : 0;
+
+  const intake = reservation.intakeAnswer
+    ? (() => {
+        try {
+          const parsed = JSON.parse(reservation.intakeAnswer.answers);
+          return parsed && typeof parsed === "object" ? parsed : null;
+        } catch {
+          return null;
+        }
+      })()
+    : null;
 
   return (
     <div className="space-y-6">
@@ -77,23 +115,77 @@ export default async function AdminReservationDetailPage({
 
       <Card>
         <CardHeader>
+          <CardTitle>待ち状況</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {queueTotal > 0 ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                全{queueTotal}人中 {queuePosition}番目
+              </p>
+              <div className="h-2 w-full rounded bg-muted">
+                <div
+                  className="h-2 rounded bg-primary"
+                  style={{ width: `${queuePercent}%` }}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">待ち状況を計算できませんでした。</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>問診内容</CardTitle>
         </CardHeader>
         <CardContent>
-          {reservation.intakeAnswer ? (
-            <pre className="whitespace-pre-wrap rounded-md bg-muted p-4 text-sm">
-              {(() => {
-                try {
-                  return JSON.stringify(
-                    JSON.parse(reservation.intakeAnswer.answers),
-                    null,
-                    2
-                  );
-                } catch {
-                  return reservation.intakeAnswer.answers;
-                }
-              })()}
-            </pre>
+          {intake ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <p className="text-sm text-muted-foreground">症状</p>
+                <p className="font-medium">{intake.symptoms ?? "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">発症時期</p>
+                <p className="font-medium">{intake.onset ?? "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">既往歴</p>
+                <p className="font-medium">{intake.history ?? "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">内服薬</p>
+                <p className="font-medium">{intake.medications ?? "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">アレルギー</p>
+                <p className="font-medium">{intake.allergies ?? "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">来院目的</p>
+                <p className="font-medium">
+                  {intake.visitType === "followup" ? "再診" : "初診"}
+                </p>
+              </div>
+              {intake.cardNumber ? (
+                <div>
+                  <p className="text-sm text-muted-foreground">診察券番号</p>
+                  <p className="font-medium">{intake.cardNumber}</p>
+                </div>
+              ) : null}
+              <div className="md:col-span-2">
+                <p className="text-sm text-muted-foreground">自由記述</p>
+                <p className="font-medium whitespace-pre-wrap">
+                  {intake.notes ?? "-"}
+                </p>
+              </div>
+            </div>
+          ) : reservation.intakeAnswer ? (
+            <p className="text-sm text-muted-foreground">
+              問診データの形式を読み取れませんでした。
+            </p>
           ) : (
             <p className="text-sm text-muted-foreground">問診は未回答です。</p>
           )}

@@ -123,6 +123,9 @@ export default function BookingPage() {
           <p className="text-sm text-muted-foreground">
             希望日時を選択し、患者情報を入力してください。
           </p>
+          <p className="text-xs text-muted-foreground">
+            予約確認は <a className="underline" href="/p/reservations">こちら</a>
+          </p>
         </div>
 
         <Card>
