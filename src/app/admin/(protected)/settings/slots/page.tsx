@@ -17,6 +17,12 @@ type SlotRule = {
   capacity: number;
 };
 
+type SlotRuleTemplate = {
+  id: string;
+  name: string;
+  rules: Omit<SlotRule, "id">[];
+};
+
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
 export default function SlotSettingsPage() {
@@ -25,6 +31,10 @@ export default function SlotSettingsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [bookingMode, setBookingMode] = useState<"time" | "session">("time");
   const [savingMode, setSavingMode] = useState(false);
+  const [templates, setTemplates] = useState<SlotRuleTemplate[]>([]);
+  const [templateName, setTemplateName] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     weekday: 1,
     startTime: "09:00",
@@ -39,6 +49,12 @@ export default function SlotSettingsPage() {
     setRules(data.rules ?? []);
   };
 
+  const fetchTemplates = async () => {
+    const response = await fetch("/api/admin/slot-templates");
+    const data = await response.json();
+    setTemplates(data.templates ?? []);
+  };
+
   const fetchClinic = async () => {
     const response = await fetch("/api/admin/clinic");
     if (!response.ok) {
@@ -51,18 +67,25 @@ export default function SlotSettingsPage() {
   useEffect(() => {
     fetchRules();
     fetchClinic();
+    fetchTemplates();
   }, []);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setError(null);
     setLoading(true);
     const method = editingId ? "PUT" : "POST";
     const url = editingId ? `/api/admin/slot-rules/${editingId}` : "/api/admin/slot-rules";
-    await fetch(url, {
+    const response = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form)
     });
+    if (!response.ok) {
+      setError("枠ルールの保存に失敗しました。");
+      setLoading(false);
+      return;
+    }
     setLoading(false);
     setEditingId(null);
     await fetchRules();
@@ -85,6 +108,58 @@ export default function SlotSettingsPage() {
     }
     await fetch(`/api/admin/slot-rules/${id}`, { method: "DELETE" });
     await fetchRules();
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!templateName.trim() || rules.length === 0) {
+      setError("テンプレート名と枠ルールを用意してください。");
+      return;
+    }
+    setError(null);
+    const response = await fetch("/api/admin/slot-templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: templateName,
+        rules: rules.map(({ weekday, startTime, endTime, intervalMinutes, capacity }) => ({
+          weekday,
+          startTime,
+          endTime,
+          intervalMinutes,
+          capacity
+        }))
+      })
+    });
+    if (!response.ok) {
+      setError("テンプレートの保存に失敗しました。");
+      return;
+    }
+    setTemplateName("");
+    await fetchTemplates();
+  };
+
+  const handleApplyTemplate = async () => {
+    if (!selectedTemplateId) {
+      setError("テンプレートを選択してください。");
+      return;
+    }
+    setError(null);
+    const response = await fetch(`/api/admin/slot-templates/${selectedTemplateId}/apply`, {
+      method: "POST"
+    });
+    if (!response.ok) {
+      setError("テンプレートの適用に失敗しました。");
+      return;
+    }
+    await fetchRules();
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!selectedTemplateId) return;
+    if (!confirm("このテンプレートを削除しますか？")) return;
+    await fetch(`/api/admin/slot-templates/${selectedTemplateId}`, { method: "DELETE" });
+    setSelectedTemplateId("");
+    await fetchTemplates();
   };
 
   const handleBookingModeChange = async (value: "time" | "session") => {
@@ -128,6 +203,50 @@ export default function SlotSettingsPage() {
           <p className="text-xs text-muted-foreground">
             午前/午後の部は、設定された時間帯をもとに自動で分割されます。
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>テンプレート</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">テンプレート選択</label>
+              <Select
+                value={selectedTemplateId}
+                onChange={(event) => setSelectedTemplateId(event.target.value)}
+              >
+                <option value="">選択してください</option>
+                {templates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <Button type="button" variant="outline" onClick={handleApplyTemplate}>
+              適用
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleDeleteTemplate}>
+              削除
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">新規テンプレート名</label>
+              <Input
+                value={templateName}
+                onChange={(event) => setTemplateName(event.target.value)}
+                placeholder="例) 今週テンプレート"
+              />
+            </div>
+            <Button type="button" onClick={handleSaveTemplate}>
+              現在の枠ルールで作成
+            </Button>
+          </div>
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
         </CardContent>
       </Card>
 
@@ -223,6 +342,7 @@ export default function SlotSettingsPage() {
                 </Button>
               ) : null}
             </div>
+            {error ? <p className="text-sm text-destructive md:col-span-5">{error}</p> : null}
           </form>
         </CardContent>
       </Card>

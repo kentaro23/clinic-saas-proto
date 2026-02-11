@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getOrCreateClinic } from "@/lib/clinic";
 import { prisma } from "@/lib/prisma";
 import { reservationCreateSchema } from "@/lib/validators";
 import { calculateSlots } from "@/lib/slots";
@@ -18,11 +19,7 @@ export async function POST(request: Request) {
       (await prisma.clinic.findUnique({
         where: { id: parsed.data.clinicId }
       }))) ||
-    (await prisma.clinic.findFirst());
-
-  if (!clinic) {
-    return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
-  }
+    (await getOrCreateClinic());
 
   const slotStart = new Date(parsed.data.slotStart);
   const rules = await prisma.slotRule.findMany({

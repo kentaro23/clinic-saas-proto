@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getOrCreateClinic } from "@/lib/clinic";
 import { prisma } from "@/lib/prisma";
 import { calculateSlots } from "@/lib/slots";
 import { startOfDay, endOfDay } from "@/lib/dates";
@@ -9,10 +10,7 @@ export async function GET(request: Request) {
   const dateParam = searchParams.get("date");
   const targetDate = dateParam ? new Date(`${dateParam}T00:00:00`) : new Date();
 
-  const clinic = await prisma.clinic.findFirst();
-  if (!clinic) {
-    return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
-  }
+  const clinic = await getOrCreateClinic();
 
   const rules = await prisma.slotRule.findMany({
     where: { clinicId: clinic.id }
