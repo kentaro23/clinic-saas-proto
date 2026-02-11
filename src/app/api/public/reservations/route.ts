@@ -53,6 +53,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Slot not available" }, { status: 409 });
   }
 
+  const dayStart = startOfDay(slotStart);
+  const dayEnd = endOfDay(slotStart);
+  const queueNumber =
+    (await prisma.reservation.count({
+      where: {
+        clinicId: clinic.id,
+        status: "booked",
+        slotStart: {
+          gte: dayStart,
+          lte: dayEnd
+        }
+      }
+    })) + 1;
+
   const reservation = await prisma.reservation.create({
     data: {
       clinicId: clinic.id,
@@ -61,6 +75,7 @@ export async function POST(request: Request) {
       purpose: parsed.data.purpose,
       cardNumber: parsed.data.cardNumber?.trim() || null,
       lineUserId: parsed.data.lineUserId?.trim() || null,
+      queueNumber,
       slotStart
     }
   });

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
 import { endOfDay, startOfDay } from "@/lib/dates";
+import { sendLinePush } from "@/lib/line";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
@@ -18,11 +19,30 @@ export async function POST(request: Request) {
     }
   });
 
+  const canPush = Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN);
+  const targets = reservations.filter((reservation) => reservation.lineUserId);
+  const results = await Promise.all(
+    targets.map(async (reservation) => {
+      try {
+        if (canPush && reservation.lineUserId) {
+          await sendLinePush(
+            reservation.lineUserId,
+            "ご予約のリマインドです。本日のご来院をお待ちしております。"
+          );
+          return { reservation, channel: "line" };
+        }
+      } catch {
+        // fall through to mock
+      }
+      return { reservation, channel: "line_mock" };
+    })
+  );
+
   const logs = await prisma.messageLog.createMany({
-    data: reservations.map((reservation) => ({
+    data: results.map(({ reservation, channel }) => ({
       reservationId: reservation.id,
       type: "reminder",
-      channel: "line_mock",
+      channel,
       payload: JSON.stringify({
         message: "リマインド送信",
         reservationId: reservation.id

@@ -65,6 +65,7 @@ export default async function AdminDashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>番号</TableHead>
                   <TableHead>時刻</TableHead>
                   <TableHead>患者</TableHead>
                   <TableHead>目的</TableHead>
@@ -75,6 +76,7 @@ export default async function AdminDashboardPage() {
               <TableBody>
                 {reservations.map((reservation) => (
                   <TableRow key={reservation.id}>
+                    <TableCell>{reservation.queueNumber ?? "-"}</TableCell>
                     <TableCell>{formatTime(reservation.slotStart)}</TableCell>
                     <TableCell>
                       <Link

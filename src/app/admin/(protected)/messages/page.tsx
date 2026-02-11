@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDateTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
+import { SendCallButton } from "./send-call-button";
 import { SendReminderButton } from "./send-reminder-button";
 
 export const dynamic = "force-dynamic";
@@ -18,9 +19,12 @@ export default async function AdminMessagesPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">送信ログ</h1>
-          <p className="text-sm text-muted-foreground">疑似リマインド送信の記録一覧です。</p>
+          <p className="text-sm text-muted-foreground">リマインド/呼び出し通知の記録一覧です。</p>
         </div>
-        <SendReminderButton />
+        <div className="flex flex-wrap items-center gap-2">
+          <SendReminderButton />
+          <SendCallButton />
+        </div>
       </div>
 
       <Card>

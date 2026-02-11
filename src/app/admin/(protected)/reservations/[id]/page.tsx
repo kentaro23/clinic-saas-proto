@@ -55,6 +55,10 @@ export default async function AdminReservationDetailPage({
             <p className="font-medium">{reservation.patientPhone}</p>
           </div>
           <div>
+            <p className="text-sm text-muted-foreground">呼び出し番号</p>
+            <p className="font-medium">{reservation.queueNumber ?? "-"}</p>
+          </div>
+          <div>
             <p className="text-sm text-muted-foreground">来院目的</p>
             <p className="font-medium">{formatVisitPurpose(reservation.purpose)}</p>
           </div>

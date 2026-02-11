@@ -38,6 +38,8 @@ model Reservation {
   purpose     String
   cardNumber  String?
   lineUserId  String?
+  queueNumber Int?
+  callNotifiedAt DateTime?
   slotStart   DateTime
   status      String            @default("booked")
   createdAt   DateTime          @default(now())
