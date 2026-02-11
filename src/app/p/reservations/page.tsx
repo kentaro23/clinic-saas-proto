@@ -154,7 +154,7 @@ export default function ReservationHistoryPage() {
                     </div>
                   ) : null}
                   <Button asChild variant="outline">
-                    <a href={`/p/intake/${reservation.id}`}>問診を開く</a>
+                    <a href={`/p/intake/${reservation.id}`}>問診を確認・編集</a>
                   </Button>
                 </CardContent>
               </Card>

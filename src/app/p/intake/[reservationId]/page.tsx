@@ -24,6 +24,7 @@ export default function IntakePage() {
   const [queueTotal, setQueueTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [hasExistingIntake, setHasExistingIntake] = useState(false);
   const [form, setForm] = useState({
     symptoms: "",
     onset: "",
@@ -42,6 +43,28 @@ export default function IntakePage() {
       setReservation(data.reservation ?? null);
       setQueuePosition(data.queuePosition ?? null);
       setQueueTotal(data.queueTotal ?? null);
+      const existingAnswers = data.reservation?.intakeAnswer?.answers;
+      if (existingAnswers) {
+        try {
+          const parsed = JSON.parse(existingAnswers);
+          if (parsed && typeof parsed === "object") {
+            setForm((prev) => ({
+              ...prev,
+              symptoms: parsed.symptoms ?? prev.symptoms,
+              onset: parsed.onset ?? prev.onset,
+              history: parsed.history ?? prev.history,
+              medications: parsed.medications ?? prev.medications,
+              allergies: parsed.allergies ?? prev.allergies,
+              visitType: parsed.visitType ?? prev.visitType,
+              cardNumber: parsed.cardNumber ?? prev.cardNumber,
+              notes: parsed.notes ?? prev.notes
+            }));
+            setHasExistingIntake(true);
+          }
+        } catch {
+          // ignore parse errors; allow editing as new input
+        }
+      }
       setLoading(false);
     };
 
@@ -123,6 +146,11 @@ export default function IntakePage() {
               <CardTitle>入力してください</CardTitle>
             </CardHeader>
             <CardContent>
+              {hasExistingIntake ? (
+                <p className="text-sm text-muted-foreground">
+                  既に問診内容が登録されています。必要に応じて編集してください。
+                </p>
+              ) : null}
               <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="space-y-1">
                   <label className="text-sm font-medium">症状</label>
@@ -203,7 +231,9 @@ export default function IntakePage() {
                     onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
                   />
                 </div>
-                <Button type="submit">問診を送信</Button>
+                <Button type="submit">
+                  {hasExistingIntake ? "問診を更新" : "問診を送信"}
+                </Button>
               </form>
             </CardContent>
           </Card>
