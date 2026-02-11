@@ -36,7 +36,9 @@ export default function ReservationHistoryPage() {
 
   useEffect(() => {
     const initLiff = async () => {
-      const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+      const liffId =
+        process.env.NEXT_PUBLIC_LIFF_RESERVATIONS_ID ??
+        process.env.NEXT_PUBLIC_LIFF_ID;
       if (!liffId || !window.liff) {
         setError("LINE内ブラウザからアクセスしてください。");
         setLoading(false);

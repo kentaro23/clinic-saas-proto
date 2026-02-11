@@ -61,7 +61,9 @@ export default function BookingPage() {
 
   useEffect(() => {
     const initLiff = async () => {
-      const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+      const liffId =
+        process.env.NEXT_PUBLIC_LIFF_BOOKING_ID ??
+        process.env.NEXT_PUBLIC_LIFF_ID;
       if (!liffId || !window.liff) return;
       try {
         await window.liff.init({ liffId });
