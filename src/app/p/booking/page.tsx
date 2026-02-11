@@ -82,12 +82,16 @@ export default function BookingPage() {
           }, 100);
         });
 
-        await window.liff.init({ liffId });
-        if (!window.liff.isLoggedIn() && !window.liff.isInClient?.()) {
-          window.liff.login();
+        const liff = window.liff;
+        if (!liff) {
+          throw new Error("LIFF SDKが読み込めませんでした。");
+        }
+        await liff.init({ liffId });
+        if (!liff.isLoggedIn() && !liff.isInClient?.()) {
+          liff.login();
           return;
         }
-        const profile = await window.liff.getProfile();
+        const profile = await liff.getProfile();
         setForm((prev) => ({ ...prev, lineUserId: profile.userId }));
       } catch (error) {
         console.error("LIFF init failed", error);
