@@ -20,11 +20,12 @@ export function toDateOnlyString(date: Date) {
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 export function toJstDateString(date: Date) {
-  const jst = new Date(date.getTime() + JST_OFFSET_MS);
-  const year = jst.getUTCFullYear();
-  const month = String(jst.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(jst.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
 }
 
 export function getJstDayRange(dateStr: string) {
