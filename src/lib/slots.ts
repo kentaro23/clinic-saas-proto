@@ -1,6 +1,12 @@
 import type { Reservation, SlotRule } from "@prisma/client";
 
-import { endOfDay, startOfDay } from "@/lib/dates";
+import {
+  buildJstDateTime,
+  getJstDayRange,
+  getJstHour,
+  getJstWeekday,
+  toJstDateString
+} from "@/lib/dates";
 
 export type SlotMode = "time" | "session";
 
@@ -19,6 +25,7 @@ type Rule = Pick<
 
 type CalculateArgs = {
   date: Date;
+  dateStr?: string;
   rules: Rule[];
   reservations: Reservation[];
   mode: SlotMode;
@@ -26,12 +33,13 @@ type CalculateArgs = {
 
 const buildTimeSlots = ({
   date,
+  dateStr,
   rules,
   reservations
 }: Omit<CalculateArgs, "mode">): SlotCandidate[] => {
-  const dayStart = startOfDay(date);
-  const dayEnd = endOfDay(date);
-  const weekday = date.getDay();
+  const targetDateStr = dateStr ?? toJstDateString(date);
+  const { start: dayStart, end: dayEnd } = getJstDayRange(targetDateStr);
+  const weekday = getJstWeekday(targetDateStr);
   const results: SlotCandidate[] = [];
   const bookings = reservations.filter(
     (reservation) =>
@@ -43,12 +51,8 @@ const buildTimeSlots = ({
   rules
     .filter((rule) => rule.weekday === weekday)
     .forEach((rule) => {
-      const [startHour, startMinute] = rule.startTime.split(":").map(Number);
-      const [endHour, endMinute] = rule.endTime.split(":").map(Number);
-      const start = new Date(dayStart);
-      start.setHours(startHour, startMinute, 0, 0);
-      const end = new Date(dayStart);
-      end.setHours(endHour, endMinute, 0, 0);
+      const start = buildJstDateTime(targetDateStr, rule.startTime);
+      const end = buildJstDateTime(targetDateStr, rule.endTime);
 
       for (
         let cursor = new Date(start);
@@ -74,17 +78,18 @@ const buildTimeSlots = ({
 
 const buildSessionSlots = ({
   date,
+  dateStr,
   rules,
   reservations
 }: Omit<CalculateArgs, "mode">): SlotCandidate[] => {
-  const timeSlots = buildTimeSlots({ date, rules, reservations }).filter(
+  const timeSlots = buildTimeSlots({ date, dateStr, rules, reservations }).filter(
     (slot) => slot.capacity > 0
   );
   const morningSlots = timeSlots.filter(
-    (slot) => slot.slotStart.getHours() < 12
+    (slot) => getJstHour(slot.slotStart) < 12
   );
   const afternoonSlots = timeSlots.filter(
-    (slot) => slot.slotStart.getHours() >= 12
+    (slot) => getJstHour(slot.slotStart) >= 12
   );
   const results: SlotCandidate[] = [];
 
@@ -113,12 +118,13 @@ const buildSessionSlots = ({
 
 export function calculateSlots({
   date,
+  dateStr,
   rules,
   reservations,
   mode
 }: CalculateArgs): SlotCandidate[] {
   if (mode === "session") {
-    return buildSessionSlots({ date, rules, reservations });
+    return buildSessionSlots({ date, dateStr, rules, reservations });
   }
-  return buildTimeSlots({ date, rules, reservations });
+  return buildTimeSlots({ date, dateStr, rules, reservations });
 }

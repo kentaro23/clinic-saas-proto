@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { endOfDay, startOfDay } from "@/lib/dates";
+import { getJstDayRange, toJstDateString } from "@/lib/dates";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { sendLinePush } from "@/lib/line";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +14,8 @@ export async function POST(request: Request) {
   const dateParam = body?.date as string | undefined;
   const currentNumber = Number(body?.currentNumber ?? 0);
   const threshold = Number(body?.threshold ?? 3);
-  const targetDate = dateParam ? new Date(`${dateParam}T00:00:00`) : new Date();
+  const dateStr = dateParam ?? toJstDateString(new Date());
+  const { start, end } = getJstDayRange(dateStr);
 
   if (!Number.isFinite(currentNumber) || currentNumber <= 0) {
     return NextResponse.json({ error: "Invalid currentNumber" }, { status: 400 });
@@ -31,8 +32,8 @@ export async function POST(request: Request) {
       },
       callNotifiedAt: null,
       slotStart: {
-        gte: startOfDay(targetDate),
-        lte: endOfDay(targetDate)
+        gte: start,
+        lte: end
       },
       lineUserId: { not: null }
     }

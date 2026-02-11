@@ -4,16 +4,15 @@ import { KpiCard } from "@/components/layout/kpi-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { endOfDay, startOfDay, toDateOnlyString } from "@/lib/dates";
+import { getJstDayRange, toJstDateString } from "@/lib/dates";
 import { formatTime, formatVisitPurpose } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const today = new Date();
-  const todayStart = startOfDay(today);
-  const todayEnd = endOfDay(today);
+  const dateStr = toJstDateString(new Date());
+  const { start: todayStart, end: todayEnd } = getJstDayRange(dateStr);
 
   const [reservations, reminderCount] = await Promise.all([
     prisma.reservation.findMany({

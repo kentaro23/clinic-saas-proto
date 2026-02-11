@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { getOrCreateClinic } from "@/lib/clinic";
+import { getJstDayRange, toJstDateString } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
-import { reservationCreateSchema } from "@/lib/validators";
 import { calculateSlots } from "@/lib/slots";
-import { startOfDay, endOfDay } from "@/lib/dates";
+import { reservationCreateSchema } from "@/lib/validators";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -22,6 +22,8 @@ export async function POST(request: Request) {
     (await getOrCreateClinic());
 
   const slotStart = new Date(parsed.data.slotStart);
+  const dateStr = toJstDateString(slotStart);
+  const { start: dayStart, end: dayEnd } = getJstDayRange(dateStr);
   const rules = await prisma.slotRule.findMany({
     where: { clinicId: clinic.id }
   });
@@ -29,8 +31,8 @@ export async function POST(request: Request) {
     where: {
       clinicId: clinic.id,
       slotStart: {
-        gte: startOfDay(slotStart),
-        lte: endOfDay(slotStart)
+        gte: dayStart,
+        lte: dayEnd
       }
     }
   });
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
   const bookingMode = clinic.bookingMode === "session" ? "session" : "time";
   const slots = calculateSlots({
     date: slotStart,
+    dateStr,
     rules,
     reservations,
     mode: bookingMode
@@ -50,8 +53,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Slot not available" }, { status: 409 });
   }
 
-  const dayStart = startOfDay(slotStart);
-  const dayEnd = endOfDay(slotStart);
   const queueNumber =
     (await prisma.reservation.count({
       where: {

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { endOfDay, startOfDay, toDateOnlyString } from "@/lib/dates";
+import { getJstDayRange, toJstDateString } from "@/lib/dates";
 import { formatTime, formatVisitPurpose } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
@@ -15,15 +15,14 @@ export default async function AdminReservationsPage({
 }: {
   searchParams: { date?: string };
 }) {
-  const today = new Date();
-  const dateStr = searchParams?.date ?? toDateOnlyString(today);
-  const targetDate = new Date(`${dateStr}T00:00:00`);
+  const dateStr = searchParams?.date ?? toJstDateString(new Date());
+  const { start, end } = getJstDayRange(dateStr);
 
   const reservations = await prisma.reservation.findMany({
     where: {
       slotStart: {
-        gte: startOfDay(targetDate),
-        lte: endOfDay(targetDate)
+        gte: start,
+        lte: end
       }
     },
     orderBy: { slotStart: "asc" },

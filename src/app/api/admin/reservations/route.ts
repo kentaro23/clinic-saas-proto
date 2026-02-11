@@ -1,18 +1,19 @@
 import { NextResponse } from "next/server";
 
+import { getJstDayRange, toJstDateString } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
-import { endOfDay, startOfDay } from "@/lib/dates";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const dateParam = searchParams.get("date");
-  const targetDate = dateParam ? new Date(`${dateParam}T00:00:00`) : new Date();
+  const dateStr = dateParam ?? toJstDateString(new Date());
+  const { start, end } = getJstDayRange(dateStr);
 
   const reservations = await prisma.reservation.findMany({
     where: {
       slotStart: {
-        gte: startOfDay(targetDate),
-        lte: endOfDay(targetDate)
+        gte: start,
+        lte: end
       }
     },
     orderBy: { slotStart: "asc" },
