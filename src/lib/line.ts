@@ -38,3 +38,39 @@ export async function sendLinePush(
 
   return response.json().catch(() => ({}));
 }
+
+type LineReplyPayload = {
+  replyToken: string;
+  messages: LineTextMessage[];
+};
+
+export async function sendLineReply(
+  replyToken: string,
+  message: string
+): Promise<Record<string, unknown>> {
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  if (!token) {
+    throw new Error("LINE_CHANNEL_ACCESS_TOKEN is not set.");
+  }
+
+  const payload: LineReplyPayload = {
+    replyToken,
+    messages: [{ type: "text", text: message }]
+  };
+
+  const response = await fetch("https://api.line.me/v2/bot/message/reply", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`LINE reply failed: ${response.status} ${detail}`);
+  }
+
+  return response.json().catch(() => ({}));
+}
