@@ -42,7 +42,7 @@ export default async function AdminDashboardPage() {
       <div>
         <h1 className="text-2xl font-semibold">ダッシュボード</h1>
         <p className="text-sm text-muted-foreground">
-          {toDateOnlyString(today)} の予約状況
+          {dateStr} の予約状況
         </p>
       </div>
 
