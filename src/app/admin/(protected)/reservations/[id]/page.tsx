@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 
 import { CancelButton } from "./cancel-button";
 import { ReschedulePanel } from "./reschedule-panel";
+import { WaitStatusControls } from "./wait-status-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -97,7 +98,7 @@ export default async function AdminReservationDetailPage({
             {reservation.patientName} / {formatDateTime(reservation.slotStart)}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant={reservation.status === "cancelled" ? "destructive" : "outline"}>
             {reservation.status === "cancelled" ? "キャンセル" : "予約済み"}
           </Badge>
@@ -140,6 +141,18 @@ export default async function AdminReservationDetailPage({
             <p className="text-sm text-muted-foreground">待ちステータス</p>
             <p className="font-medium">{waitStatusLabel}</p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>待ちステータス管理</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <WaitStatusControls
+            reservationId={reservation.id}
+            currentStatus={reservation.waitStatus}
+          />
         </CardContent>
       </Card>
 
