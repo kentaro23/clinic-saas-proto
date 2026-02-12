@@ -59,15 +59,16 @@ export default function WaitlistPage() {
             日付ごと・枠ごとの待ち状況と並び替えができます。
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Input
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
-            className="w-44"
+            className="h-9 w-44"
           />
           <Button
             type="button"
+            size="sm"
             variant="outline"
             onClick={() => fetchWaitlist(date || undefined)}
           >
@@ -89,7 +90,10 @@ export default function WaitlistPage() {
               <Card key={slot.slotStart}>
                 <CardHeader>
                   <CardTitle className="text-base">
-                    {label}（残り {slot.remaining}/{slot.capacity}）
+                    {label}
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      （残り {slot.remaining}/{slot.capacity}）
+                    </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">

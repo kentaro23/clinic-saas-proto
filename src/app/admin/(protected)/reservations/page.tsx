@@ -38,12 +38,12 @@ export default async function AdminReservationsPage({
           <p className="text-sm text-muted-foreground">日付別の予約状況を確認できます。</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link href="/admin/reservations/new" className="inline-flex">
-            <Badge variant="outline">手動予約を追加</Badge>
-          </Link>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/admin/reservations/new">手動予約を追加</Link>
+          </Button>
           <form className="flex items-center gap-2" method="GET">
-            <Input type="date" name="date" defaultValue={dateStr} />
-            <Button type="submit" variant="outline">
+            <Input type="date" name="date" defaultValue={dateStr} className="h-9" />
+            <Button type="submit" size="sm" variant="outline">
               表示
             </Button>
           </form>

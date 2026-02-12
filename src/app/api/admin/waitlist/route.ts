@@ -44,13 +44,22 @@ export async function GET(request: Request) {
   const slotMap = new Map<string, typeof slots[0]>();
   slots.forEach((slot) => slotMap.set(slot.slotStart.toISOString(), slot));
 
-  const grouped = slots.map((slot) => {
-    const groupReservations = reservations
-      .filter(
-        (reservation) =>
-          reservation.slotStart.getTime() === slot.slotStart.getTime()
-      )
-      .sort((a, b) => {
+  const reservationGroups = new Map<string, typeof reservations>();
+  reservations.forEach((reservation) => {
+    const key = reservation.slotStart.toISOString();
+    const group = reservationGroups.get(key) ?? [];
+    group.push(reservation);
+    reservationGroups.set(key, group);
+  });
+
+  const allKeys = Array.from(
+    new Set([...slotMap.keys(), ...reservationGroups.keys()])
+  ).sort();
+
+  const grouped = allKeys.map((key) => {
+    const slot = slotMap.get(key);
+    const groupReservations = (reservationGroups.get(key) ?? []).sort(
+      (a, b) => {
         if (a.queueOrder != null && b.queueOrder != null) {
           return a.queueOrder - b.queueOrder;
         }
@@ -58,13 +67,14 @@ export async function GET(request: Request) {
           return a.queueNumber - b.queueNumber;
         }
         return a.slotStart.getTime() - b.slotStart.getTime();
-      });
+      }
+    );
 
     return {
-      slotStart: slot.slotStart.toISOString(),
-      label: slot.label ?? null,
-      capacity: slot.capacity,
-      remaining: slot.remaining,
+      slotStart: key,
+      label: slot?.label ?? null,
+      capacity: slot?.capacity ?? groupReservations.length,
+      remaining: slot?.remaining ?? 0,
       reservations: groupReservations.map((reservation) => ({
         id: reservation.id,
         patientName: reservation.patientName,
