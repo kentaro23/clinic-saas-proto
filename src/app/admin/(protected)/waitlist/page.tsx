@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { formatTime } from "@/lib/format";
 
 type ReservationRow = {
@@ -172,15 +173,23 @@ export default function WaitlistPage() {
                           </span>{" "}
                           {reservation.patientName}（{reservation.patientPhone}）
                         </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={selectedIds.includes(reservation.id) ? "default" : "outline"}
-                          onClick={() => toggleSelection(reservation.id)}
-                        >
-                          {selectedIds.includes(reservation.id) ? "選択中" : "選択"}
-                        </Button>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            aria-pressed={selectedIds.includes(reservation.id)}
+                            onClick={() => toggleSelection(reservation.id)}
+                            className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs transition ${
+                              selectedIds.includes(reservation.id)
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-input bg-background text-muted-foreground hover:bg-muted"
+                            }`}
+                          >
+                            {selectedIds.includes(reservation.id) ? "●" : "○"}
+                          </button>
+                          <span className="text-xs text-muted-foreground">選択</span>
+                        </div>
+                        <Separator orientation="vertical" className="h-6" />
                         <div className="flex flex-wrap items-center gap-1">
                           {statusOptions.map((status) => (
                             <Button
