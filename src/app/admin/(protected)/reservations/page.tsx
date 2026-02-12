@@ -36,9 +36,17 @@ export default async function AdminReservationsPage({
           <h1 className="text-2xl font-semibold">予約一覧</h1>
           <p className="text-sm text-muted-foreground">日付別の予約状況を確認できます。</p>
         </div>
-        <form className="flex items-center gap-2" method="GET">
-          <Input type="date" name="date" defaultValue={dateStr} />
-        </form>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/admin/reservations/new" className="inline-flex">
+            <Badge variant="outline">手動予約を追加</Badge>
+          </Link>
+          <form className="flex items-center gap-2" method="GET">
+            <Input type="date" name="date" defaultValue={dateStr} />
+            <Button type="submit" variant="outline">
+              表示
+            </Button>
+          </form>
+        </div>
       </div>
 
       <Card>

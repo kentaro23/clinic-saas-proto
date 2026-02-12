@@ -21,14 +21,14 @@ export async function GET(
   const dayReservations = await prisma.reservation.findMany({
     where: {
       status: "booked",
-      slotStart: {
-        gte: start,
-        lte: end
-      }
+      slotStart: reservation.slotStart
     },
-    select: { id: true, queueNumber: true, slotStart: true }
+    select: { id: true, queueOrder: true, queueNumber: true, slotStart: true }
   });
   const sorted = [...dayReservations].sort((a, b) => {
+    if (a.queueOrder != null && b.queueOrder != null) {
+      return a.queueOrder - b.queueOrder;
+    }
     if (a.queueNumber != null && b.queueNumber != null) {
       return a.queueNumber - b.queueNumber;
     }

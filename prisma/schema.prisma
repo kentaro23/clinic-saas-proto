@@ -50,6 +50,7 @@ model Reservation {
   cardNumber  String?
   lineUserId  String?
   queueNumber Int?
+  queueOrder  Int?
   callNotifiedAt DateTime?
   slotStart   DateTime
   status      String            @default("booked")

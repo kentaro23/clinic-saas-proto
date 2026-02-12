@@ -64,6 +64,14 @@ export async function POST(request: Request) {
         }
       }
     })) + 1;
+  const queueOrder =
+    (await prisma.reservation.count({
+      where: {
+        clinicId: clinic.id,
+        status: "booked",
+        slotStart
+      }
+    })) + 1;
 
   const reservation = await prisma.reservation.create({
     data: {
@@ -74,6 +82,7 @@ export async function POST(request: Request) {
       cardNumber: parsed.data.cardNumber?.trim() || null,
       lineUserId: parsed.data.lineUserId?.trim() || null,
       queueNumber,
+      queueOrder,
       slotStart
     }
   });
@@ -97,25 +106,25 @@ export async function GET(request: Request) {
     orderBy: { slotStart: "desc" }
   });
 
-  const dateStrs = Array.from(
-    new Set(reservations.map((reservation) => toJstDateString(reservation.slotStart)))
+  const slotStarts = Array.from(
+    new Set(reservations.map((reservation) => reservation.slotStart.toISOString()))
   );
 
   const queueMap = new Map<string, { position: number; total: number }>();
-  for (const dateStr of dateStrs) {
-    const { start, end } = getJstDayRange(dateStr);
-    const dayReservations = await prisma.reservation.findMany({
+  for (const slotStartIso of slotStarts) {
+    const slotStart = new Date(slotStartIso);
+    const slotReservations = await prisma.reservation.findMany({
       where: {
         status: "booked",
-        slotStart: {
-          gte: start,
-          lte: end
-        }
+        slotStart
       },
-      select: { id: true, queueNumber: true, slotStart: true }
+      select: { id: true, queueOrder: true, queueNumber: true, slotStart: true }
     });
 
-    const sorted = [...dayReservations].sort((a, b) => {
+    const sorted = [...slotReservations].sort((a, b) => {
+      if (a.queueOrder != null && b.queueOrder != null) {
+        return a.queueOrder - b.queueOrder;
+      }
       if (a.queueNumber != null && b.queueNumber != null) {
         return a.queueNumber - b.queueNumber;
       }
