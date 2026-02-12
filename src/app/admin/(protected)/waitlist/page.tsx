@@ -123,6 +123,7 @@ export default function WaitlistPage() {
             variant="outline"
             disabled={sending || selectedIds.length === 0}
             onClick={() => sendBulk("reminder")}
+            className="border-emerald-500 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:border-border disabled:text-muted-foreground"
           >
             選択にリマインド
           </Button>
@@ -200,6 +201,15 @@ export default function WaitlistPage() {
                                 reservation.waitStatus === status.value
                                   ? "default"
                                   : "outline"
+                              }
+                              className={
+                                status.value === "waiting"
+                                  ? "border-amber-400 text-amber-700 hover:bg-amber-50"
+                                  : status.value === "called"
+                                    ? "border-blue-400 text-blue-700 hover:bg-blue-50"
+                                    : status.value === "arrived"
+                                      ? "border-emerald-400 text-emerald-700 hover:bg-emerald-50"
+                                      : "border-slate-400 text-slate-700 hover:bg-slate-50"
                               }
                               onClick={() =>
                                 handleStatusChange(reservation.id, status.value)
