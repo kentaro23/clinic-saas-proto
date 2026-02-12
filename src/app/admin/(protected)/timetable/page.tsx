@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatTime } from "@/lib/format";
 
@@ -107,31 +106,35 @@ export default function WaitlistTimetablePage() {
         <p className="text-sm text-muted-foreground">対象の枠がありません。</p>
       ) : (
         <div className="overflow-x-auto">
-          <div className="grid min-w-[720px] gap-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(220px, 1fr))` }}>
-            {columns.map((slot) => {
+          <div
+            className="grid min-w-[760px] border border-border bg-background"
+            style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(200px, 1fr))` }}
+          >
+            {columns.map((slot, columnIndex) => {
               const label = slot.label ?? formatTime(new Date(slot.slotStart));
               return (
-                <Card key={slot.slotStart} className="min-h-[240px]">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">
-                      {label}
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        （残り {slot.remaining}/{slot.capacity}）
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
+                <div
+                  key={slot.slotStart}
+                  className={`min-h-[260px] ${columnIndex > 0 ? "border-l" : ""}`}
+                >
+                  <div className="sticky top-0 z-10 border-b bg-background/95 px-4 py-3 backdrop-blur">
+                    <div className="text-sm font-semibold">{label}</div>
+                    <div className="text-xs text-muted-foreground">
+                      残り {slot.remaining}/{slot.capacity}
+                    </div>
+                  </div>
+                  <div className="space-y-3 px-4 py-3">
                     {slot.reservations.length === 0 ? (
                       <p className="text-sm text-muted-foreground">待ちがありません。</p>
                     ) : (
                       slot.reservations.map((reservation, index) => {
                         const order =
                           reservation.queueOrder ?? reservation.queueNumber ?? index + 1;
-                        const offset = Math.min(index, 6) * 10;
+                        const offset = Math.min(index, 6) * 12;
                         return (
                           <div
                             key={reservation.id}
-                            className="rounded-md border px-3 py-2 text-xs"
+                            className="rounded-md border bg-muted/30 px-3 py-2 text-xs"
                             style={{ marginLeft: `${offset}px` }}
                           >
                             <div className="flex items-center justify-between gap-2">
@@ -153,8 +156,8 @@ export default function WaitlistTimetablePage() {
                         );
                       })
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               );
             })}
           </div>
