@@ -93,7 +93,8 @@ export async function GET(request: Request) {
         patientName: reservation.patientName,
         patientPhone: reservation.patientPhone,
         queueNumber: reservation.queueNumber,
-        queueOrder: reservation.queueOrder
+        queueOrder: reservation.queueOrder,
+        waitStatus: reservation.waitStatus
       }))
     };
   });

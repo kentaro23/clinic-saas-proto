@@ -87,7 +87,20 @@ export async function POST(
     data: {
       slotStart: nextSlotStart,
       queueNumber,
-      queueOrder
+      queueOrder,
+      waitStatus: "waiting"
+    }
+  });
+
+  await prisma.reservationLog.create({
+    data: {
+      reservationId: reservation.id,
+      type: "reschedule",
+      payload: JSON.stringify({
+        from: reservation.slotStart,
+        to: nextSlotStart,
+        by: "admin"
+      })
     }
   });
 

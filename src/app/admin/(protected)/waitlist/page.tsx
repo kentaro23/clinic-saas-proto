@@ -13,6 +13,7 @@ type ReservationRow = {
   patientPhone: string;
   queueNumber: number | null;
   queueOrder: number | null;
+  waitStatus: string;
 };
 
 type SlotGroup = {
@@ -27,6 +28,15 @@ export default function WaitlistPage() {
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState<SlotGroup[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sending, setSending] = useState(false);
+
+  const statusOptions = [
+    { value: "waiting", label: "待ち" },
+    { value: "called", label: "呼出中" },
+    { value: "arrived", label: "来院済み" },
+    { value: "done", label: "完了" }
+  ];
 
   const fetchWaitlist = async (targetDate?: string) => {
     setLoading(true);
@@ -47,6 +57,38 @@ export default function WaitlistPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ direction })
     });
+    await fetchWaitlist(date || undefined);
+  };
+
+  const handleStatusChange = async (id: string, status: string) => {
+    await fetch(`/api/admin/reservations/${id}/wait-status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ waitStatus: status })
+    });
+    await fetchWaitlist(date || undefined);
+  };
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const sendBulk = async (type: "reminder" | "call") => {
+    if (selectedIds.length === 0) return;
+    setSending(true);
+    const endpoint =
+      type === "reminder"
+        ? "/api/admin/messages/send-reminder"
+        : "/api/admin/messages/send-call";
+    await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reservationIds: selectedIds, date })
+    });
+    setSending(false);
+    setSelectedIds([]);
     await fetchWaitlist(date || undefined);
   };
 
@@ -73,6 +115,23 @@ export default function WaitlistPage() {
             onClick={() => fetchWaitlist(date || undefined)}
           >
             表示
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={sending || selectedIds.length === 0}
+            onClick={() => sendBulk("reminder")}
+          >
+            選択にリマインド
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={sending || selectedIds.length === 0}
+            onClick={() => sendBulk("call")}
+          >
+            選択に呼び出し
           </Button>
         </div>
       </div>
@@ -113,7 +172,34 @@ export default function WaitlistPage() {
                           </span>{" "}
                           {reservation.patientName}（{reservation.patientPhone}）
                         </div>
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={selectedIds.includes(reservation.id) ? "default" : "outline"}
+                          onClick={() => toggleSelection(reservation.id)}
+                        >
+                          {selectedIds.includes(reservation.id) ? "選択中" : "選択"}
+                        </Button>
+                        <div className="flex flex-wrap items-center gap-1">
+                          {statusOptions.map((status) => (
+                            <Button
+                              key={status.value}
+                              type="button"
+                              size="sm"
+                              variant={
+                                reservation.waitStatus === status.value
+                                  ? "default"
+                                  : "outline"
+                              }
+                              onClick={() =>
+                                handleStatusChange(reservation.id, status.value)
+                              }
+                            >
+                              {status.label}
+                            </Button>
+                          ))}
+                        </div>
                           <Button
                             type="button"
                             size="sm"

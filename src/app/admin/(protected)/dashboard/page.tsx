@@ -39,7 +39,7 @@ export default async function AdminDashboardPage() {
     : 0;
   const now = new Date();
   const waitingTargets = reservations.filter(
-    (r) => r.status === "booked" && r.slotStart > now
+    (r) => r.status === "booked" && r.waitStatus !== "done" && r.slotStart > now
   );
   const averageWaitMinutes = waitingTargets.length
     ? Math.round(
@@ -60,7 +60,10 @@ export default async function AdminDashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiCard title="本日予約数" value={todayTotal} />
-        <KpiCard title="待ち人数" value={todayBooked} />
+        <KpiCard
+          title="待ち人数"
+          value={reservations.filter((r) => r.status === "booked" && r.waitStatus !== "done").length}
+        />
         <KpiCard title="平均待ち" value={`${averageWaitMinutes}分`} />
         <KpiCard title="キャンセル数" value={todayCancelled} />
         <KpiCard title="問診完了率" value={`${intakeRate}%`} />

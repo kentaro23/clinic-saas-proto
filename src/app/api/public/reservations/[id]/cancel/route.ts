@@ -34,5 +34,13 @@ export async function POST(
     data: { status: "cancelled" }
   });
 
+  await prisma.reservationLog.create({
+    data: {
+      reservationId: reservation.id,
+      type: "cancel",
+      payload: JSON.stringify({ by: "patient" })
+    }
+  });
+
   return NextResponse.json({ reservation: updated });
 }

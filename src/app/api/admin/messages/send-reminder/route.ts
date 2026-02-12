@@ -1,23 +1,36 @@
 import { NextResponse } from "next/server";
 
 import { getJstDayRange, toJstDateString } from "@/lib/dates";
+import { isAdminAuthenticated } from "@/lib/auth";
 import { sendLinePush } from "@/lib/line";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
+  if (!isAdminAuthenticated()) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json().catch(() => ({}));
   const dateParam = body?.date as string | undefined;
+  const reservationIds = Array.isArray(body?.reservationIds)
+    ? (body.reservationIds as string[])
+    : [];
   const dateStr = dateParam ?? toJstDateString(new Date());
   const { start, end } = getJstDayRange(dateStr);
 
   const reservations = await prisma.reservation.findMany({
-    where: {
-      status: "booked",
-      slotStart: {
-        gte: start,
-        lte: end
-      }
-    }
+    where: reservationIds.length > 0
+      ? {
+          id: { in: reservationIds },
+          status: "booked"
+        }
+      : {
+          status: "booked",
+          slotStart: {
+            gte: start,
+            lte: end
+          }
+        }
   });
 
   const canPush = Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN);

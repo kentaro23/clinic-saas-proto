@@ -52,12 +52,14 @@ model Reservation {
   queueNumber Int?
   queueOrder  Int?
   callNotifiedAt DateTime?
+  waitStatus  String            @default("waiting")
   slotStart   DateTime
   status      String            @default("booked")
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   intakeAnswer IntakeAnswer?
   messageLogs  MessageLog[]
+  reservationLogs ReservationLog[]
 }
 
 model IntakeAnswer {
@@ -77,5 +79,14 @@ model MessageLog {
   channel       String
   payload       String
   sentAt        DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+}
+
+model ReservationLog {
+  id            String      @id @default(cuid())
+  reservationId String
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  type          String
+  payload       String
   createdAt     DateTime    @default(now())
 }

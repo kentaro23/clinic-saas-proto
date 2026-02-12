@@ -19,7 +19,7 @@ export default async function AdminReservationDetailPage({
 }) {
   const reservation = await prisma.reservation.findUnique({
     where: { id: params.id },
-    include: { intakeAnswer: true, messageLogs: true }
+    include: { intakeAnswer: true, messageLogs: true, reservationLogs: true }
   });
 
   if (!reservation) {
@@ -62,6 +62,31 @@ export default async function AdminReservationDetailPage({
         }
       })()
     : null;
+
+  const formatLog = (log: { type: string; payload: string }) => {
+    try {
+      const payload = JSON.parse(log.payload);
+      if (log.type === "reschedule" && payload?.from && payload?.to) {
+        return `予約変更: ${formatDateTime(new Date(payload.from))} → ${formatDateTime(new Date(payload.to))}`;
+      }
+      if (log.type === "cancel") {
+        return `キャンセル (${payload?.by === "patient" ? "患者" : "管理"})`;
+      }
+      if (log.type === "wait_status") {
+        return `待ちステータス変更: ${payload?.from ?? "-"} → ${payload?.to ?? "-"}`;
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return log.type;
+  };
+
+  const waitStatusLabel = {
+    waiting: "待ち",
+    called: "呼出中",
+    arrived: "来院済み",
+    done: "完了"
+  }[reservation.waitStatus] ?? reservation.waitStatus;
 
   return (
     <div className="space-y-6">
@@ -110,6 +135,10 @@ export default async function AdminReservationDetailPage({
           <div>
             <p className="text-sm text-muted-foreground">予約時刻</p>
             <p className="font-medium">{formatDateTime(reservation.slotStart)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">待ちステータス</p>
+            <p className="font-medium">{waitStatusLabel}</p>
           </div>
         </CardContent>
       </Card>
@@ -223,6 +252,36 @@ export default async function AdminReservationDetailPage({
                     <TableCell>{formatDateTime(log.sentAt)}</TableCell>
                   </TableRow>
                 ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>変更履歴</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {reservation.reservationLogs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">履歴はありません。</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>内容</TableHead>
+                  <TableHead>日時</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reservation.reservationLogs
+                  .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                  .map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell>{formatLog(log)}</TableCell>
+                      <TableCell>{formatDateTime(log.createdAt)}</TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           )}

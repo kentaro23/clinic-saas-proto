@@ -70,7 +70,8 @@ export async function POST(request: Request) {
       lineUserId: parsed.data.lineUserId?.trim() || null,
       queueNumber,
       queueOrder,
-      slotStart
+      slotStart,
+      waitStatus: "waiting"
     }
   });
 
