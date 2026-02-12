@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatTime } from "@/lib/format";
@@ -151,6 +153,16 @@ export default function WaitlistTimetablePage() {
                             </div>
                             <div className="mt-1 text-[11px] text-muted-foreground">
                               {reservation.patientPhone}
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <Button asChild size="sm" variant="outline" className="h-7">
+                                <Link href={`/admin/reservations/${reservation.id}`}>
+                                  詳細/ステータス
+                                </Link>
+                              </Button>
+                              <Button asChild size="sm" variant="outline" className="h-7">
+                                <Link href={`/p/intake/${reservation.id}`}>問診</Link>
+                              </Button>
                             </div>
                           </div>
                         );
