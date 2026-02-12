@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 
 import { Button } from "@/components/ui/button";
@@ -32,11 +32,15 @@ declare global {
 
 export default function BookingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rescheduleId = searchParams.get("rescheduleId");
+  const isReschedule = Boolean(rescheduleId);
   const [date, setDate] = useState(toDateOnlyString(new Date()));
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotMode, setSlotMode] = useState<"time" | "session">("time");
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [rescheduleSlotStart, setRescheduleSlotStart] = useState<string | null>(null);
   const [form, setForm] = useState({
     patientName: "",
     patientPhone: "",
@@ -59,6 +63,42 @@ export default function BookingPage() {
     fetchSlots(date);
     setSelectedSlot(null);
   }, [date]);
+
+  useEffect(() => {
+    if (!rescheduleId) return;
+    const loadReservation = async () => {
+      const response = await fetch(`/api/public/reservations/${rescheduleId}`);
+      const data = await response.json();
+      if (!response.ok || !data.reservation) {
+        setError("予約情報の取得に失敗しました。");
+        return;
+      }
+      const reservation = data.reservation;
+      setForm((prev) => ({
+        ...prev,
+        patientName: reservation.patientName ?? "",
+        patientPhone: reservation.patientPhone ?? "",
+        purpose: reservation.purpose ?? "first",
+        cardNumber: reservation.cardNumber ?? ""
+      }));
+      const reservationDate = toDateOnlyString(new Date(reservation.slotStart));
+      setDate(reservationDate);
+      setRescheduleSlotStart(reservation.slotStart);
+    };
+
+    loadReservation();
+  }, [rescheduleId]);
+
+  useEffect(() => {
+    if (!rescheduleSlotStart || slots.length === 0) return;
+    const match = slots.find(
+      (slot) =>
+        new Date(slot.slotStart).getTime() === new Date(rescheduleSlotStart).getTime()
+    );
+    if (match) {
+      setSelectedSlot(match);
+    }
+  }, [rescheduleSlotStart, slots]);
 
   useEffect(() => {
     const initLiff = async () => {
@@ -110,26 +150,40 @@ export default function BookingPage() {
       return;
     }
 
-    if (form.purpose === "followup" && !form.cardNumber.trim()) {
+    if (!isReschedule && form.purpose === "followup" && !form.cardNumber.trim()) {
       setError("再診の場合は診察券番号を入力してください。");
       return;
     }
 
-    const response = await fetch("/api/public/reservations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        slotStart: selectedSlot.slotStart
-      })
-    });
+    const response = await fetch(
+      isReschedule && rescheduleId
+        ? `/api/public/reservations/${rescheduleId}/reschedule`
+        : "/api/public/reservations",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          isReschedule
+            ? { slotStart: selectedSlot.slotStart, lineUserId: form.lineUserId }
+            : { ...form, slotStart: selectedSlot.slotStart }
+        )
+      }
+    );
 
     if (!response.ok) {
-      setError("予約作成に失敗しました。別の枠を選択してください。");
+      setError(
+        isReschedule
+          ? "予約変更に失敗しました。別の枠を選択してください。"
+          : "予約作成に失敗しました。別の枠を選択してください。"
+      );
       return;
     }
 
     const data = await response.json();
+    if (isReschedule) {
+      router.push("/p/reservations");
+      return;
+    }
     router.push(`/p/intake/${data.reservation.id}`);
   };
 
@@ -141,9 +195,13 @@ export default function BookingPage() {
       />
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-semibold">予約フォーム</h1>
+          <h1 className="text-2xl font-semibold">
+            {isReschedule ? "予約変更" : "予約フォーム"}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            希望日時を選択し、患者情報を入力してください。
+            {isReschedule
+              ? "希望日時を選択して予約を変更してください。"
+              : "希望日時を選択し、患者情報を入力してください。"}
           </p>
           <p className="text-xs text-muted-foreground">
             予約確認は <a className="underline" href="/p/reservations">こちら</a>
@@ -210,7 +268,8 @@ export default function BookingPage() {
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, patientName: event.target.value }))
                     }
-                    required
+                    required={!isReschedule}
+                    disabled={isReschedule}
                   />
                 </div>
                 <div className="space-y-1">
@@ -220,7 +279,8 @@ export default function BookingPage() {
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, patientPhone: event.target.value }))
                     }
-                    required
+                    required={!isReschedule}
+                    disabled={isReschedule}
                   />
                 </div>
               </div>
@@ -235,7 +295,8 @@ export default function BookingPage() {
                       cardNumber: event.target.value === "followup" ? prev.cardNumber : ""
                     }))
                   }
-                  required
+                  required={!isReschedule}
+                  disabled={isReschedule}
                 >
                   <option value="first">初診</option>
                   <option value="followup">再診</option>
@@ -249,12 +310,18 @@ export default function BookingPage() {
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, cardNumber: event.target.value }))
                     }
-                    required
+                    required={!isReschedule}
+                    disabled={isReschedule}
                   />
                 </div>
               )}
+              {isReschedule ? (
+                <p className="text-xs text-muted-foreground">
+                  予約変更では日時のみ変更できます。患者情報の変更は受付へご連絡ください。
+                </p>
+              ) : null}
               {error ? <p className="text-sm text-destructive">{error}</p> : null}
-              <Button type="submit">予約して問診へ</Button>
+              <Button type="submit">{isReschedule ? "予約を変更" : "予約して問診へ"}</Button>
             </form>
           </CardContent>
         </Card>

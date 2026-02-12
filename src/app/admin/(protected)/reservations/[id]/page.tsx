@@ -8,6 +8,7 @@ import { formatDateTime, formatVisitPurpose } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 import { CancelButton } from "./cancel-button";
+import { ReschedulePanel } from "./reschedule-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -112,6 +113,12 @@ export default async function AdminReservationDetailPage({
           </div>
         </CardContent>
       </Card>
+
+      <ReschedulePanel
+        reservationId={reservation.id}
+        currentSlotStart={reservation.slotStart}
+        disabled={reservation.status === "cancelled"}
+      />
 
       <Card>
         <CardHeader>

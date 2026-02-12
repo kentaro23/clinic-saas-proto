@@ -30,11 +30,23 @@ export default async function AdminDashboardPage() {
     })
   ]);
 
+  const todayTotal = reservations.length;
   const todayBooked = reservations.filter((r) => r.status === "booked").length;
   const todayCancelled = reservations.filter((r) => r.status === "cancelled").length;
   const intakeComplete = reservations.filter((r) => r.intakeAnswer).length;
   const intakeRate = reservations.length
     ? Math.round((intakeComplete / reservations.length) * 100)
+    : 0;
+  const now = new Date();
+  const waitingTargets = reservations.filter(
+    (r) => r.status === "booked" && r.slotStart > now
+  );
+  const averageWaitMinutes = waitingTargets.length
+    ? Math.round(
+        waitingTargets.reduce((sum, r) => sum + (r.slotStart.getTime() - now.getTime()), 0) /
+          waitingTargets.length /
+          60000
+      )
     : 0;
 
   return (
@@ -47,7 +59,9 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard title="今日の予約数" value={todayBooked} />
+        <KpiCard title="本日予約数" value={todayTotal} />
+        <KpiCard title="待ち人数" value={todayBooked} />
+        <KpiCard title="平均待ち" value={`${averageWaitMinutes}分`} />
         <KpiCard title="キャンセル数" value={todayCancelled} />
         <KpiCard title="問診完了率" value={`${intakeRate}%`} />
         <KpiCard title="リマインド送信数" value={reminderCount} />

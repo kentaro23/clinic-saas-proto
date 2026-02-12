@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Script from "next/script";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,10 +31,13 @@ declare global {
 }
 
 export default function ReservationHistoryPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [lineUserId, setLineUserId] = useState("");
   const [reservations, setReservations] = useState<ReservationSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     const initLiff = async () => {
@@ -94,6 +98,37 @@ export default function ReservationHistoryPage() {
     fetchReservations();
   }, [lineUserId]);
 
+  const refreshReservations = async () => {
+    if (!lineUserId) return;
+    const response = await fetch(`/api/public/reservations?lineUserId=${lineUserId}`);
+    const data = await response.json();
+    setReservations(data.reservations ?? []);
+  };
+
+  const handleCancel = async (reservationId: string) => {
+    if (!lineUserId) return;
+    if (!confirm("この予約をキャンセルしますか？")) {
+      return;
+    }
+    setActionId(reservationId);
+    setActionError(null);
+    const response = await fetch(`/api/public/reservations/${reservationId}/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lineUserId })
+    });
+    setActionId(null);
+    if (!response.ok) {
+      setActionError("キャンセルに失敗しました。");
+      return;
+    }
+    await refreshReservations();
+  };
+
+  const handleReschedule = (reservationId: string) => {
+    router.push(`/p/booking?rescheduleId=${reservationId}`);
+  };
+
   return (
     <div className="min-h-screen bg-muted/40 px-4 py-10">
       <Script src="https://static.line-scdn.net/liff/edge/2/sdk.js" strategy="beforeInteractive" />
@@ -153,9 +188,30 @@ export default function ReservationHistoryPage() {
                       </div>
                     </div>
                   ) : null}
-                  <Button asChild variant="outline">
-                    <a href={`/p/intake/${reservation.id}`}>問診を確認・編集</a>
-                  </Button>
+                  {actionError ? (
+                    <p className="text-sm text-destructive">{actionError}</p>
+                  ) : null}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button asChild variant="outline">
+                      <a href={`/p/intake/${reservation.id}`}>問診を確認・編集</a>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleReschedule(reservation.id)}
+                      disabled={reservation.status === "cancelled"}
+                    >
+                      予約を変更
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => handleCancel(reservation.id)}
+                      disabled={reservation.status === "cancelled" || actionId === reservation.id}
+                    >
+                      {actionId === reservation.id ? "処理中..." : "キャンセル"}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
