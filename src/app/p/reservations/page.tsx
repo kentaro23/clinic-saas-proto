@@ -13,9 +13,11 @@ type ReservationSummary = {
   patientName: string;
   slotStart: string;
   status: string;
+  waitStatus: string;
   queueNumber: number | null;
   queuePosition: number | null;
   queueTotal: number | null;
+  estimatedWaitMinutes: number | null;
 };
 
 declare global {
@@ -180,6 +182,11 @@ export default function ReservationHistoryPage() {
                         <span className="text-muted-foreground">待ち状況：</span>
                         全{total}人中 {position}番目
                       </div>
+                      {reservation.estimatedWaitMinutes != null ? (
+                        <div className="text-sm text-muted-foreground">
+                          待ち時間目安: 約{reservation.estimatedWaitMinutes}分
+                        </div>
+                      ) : null}
                       <div className="h-2 w-full rounded bg-muted">
                         <div
                           className="h-2 rounded bg-primary"

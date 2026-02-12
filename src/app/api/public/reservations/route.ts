@@ -4,6 +4,7 @@ import { getOrCreateClinic } from "@/lib/clinic";
 import { getJstDayRange, toJstDateString } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 import { calculateSlots } from "@/lib/slots";
+import { calculateAverageWaitMinutes } from "@/lib/wait";
 import { reservationCreateSchema } from "@/lib/validators";
 
 export async function POST(request: Request) {
@@ -107,6 +108,16 @@ export async function GET(request: Request) {
     orderBy: { slotStart: "desc" }
   });
 
+  const clinicId = reservations[0]?.clinicId;
+  const clinic =
+    (clinicId && (await prisma.clinic.findUnique({ where: { id: clinicId } }))) ||
+    (await getOrCreateClinic());
+  const rules = await prisma.slotRule.findMany({
+    where: { clinicId: clinic.id }
+  });
+
+  const averageWaitMap = new Map<string, number>();
+
   const slotStarts = Array.from(
     new Set(reservations.map((reservation) => reservation.slotStart.toISOString()))
   );
@@ -146,9 +157,22 @@ export async function GET(request: Request) {
         patientName: reservation.patientName,
         slotStart: reservation.slotStart.toISOString(),
         status: reservation.status,
+        waitStatus: reservation.waitStatus,
         queueNumber: reservation.queueNumber,
         queuePosition: queueInfo?.position ?? null,
-        queueTotal: queueInfo?.total ?? null
+        queueTotal: queueInfo?.total ?? null,
+        estimatedWaitMinutes: (() => {
+          if (!queueInfo?.position || queueInfo.position <= 1) return 0;
+          const dateStr = toJstDateString(reservation.slotStart);
+          const avg =
+            averageWaitMap.get(dateStr) ??
+            (() => {
+              const value = calculateAverageWaitMinutes(rules, dateStr);
+              averageWaitMap.set(dateStr, value);
+              return value;
+            })();
+          return Math.max(queueInfo.position - 1, 0) * avg;
+        })()
       };
     })
   });

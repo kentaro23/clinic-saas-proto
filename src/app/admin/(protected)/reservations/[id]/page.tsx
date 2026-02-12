@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getJstDayRange, toJstDateString } from "@/lib/dates";
 import { formatDateTime, formatVisitPurpose } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { calculateAverageWaitMinutes } from "@/lib/wait";
 
 import { CancelButton } from "./cancel-button";
 import { ReschedulePanel } from "./reschedule-panel";
@@ -29,6 +30,9 @@ export default async function AdminReservationDetailPage({
 
   const dateStr = toJstDateString(reservation.slotStart);
   const { start, end } = getJstDayRange(dateStr);
+  const rules = await prisma.slotRule.findMany({
+    where: { clinicId: reservation.clinicId }
+  });
   const dayReservations = await prisma.reservation.findMany({
     where: {
       status: "booked",
@@ -52,6 +56,9 @@ export default async function AdminReservationDetailPage({
     queueTotal > 0 && queuePosition > 0
       ? Math.round((queuePosition / queueTotal) * 100)
       : 0;
+  const averageWaitMinutes = calculateAverageWaitMinutes(rules, dateStr);
+  const estimatedWaitMinutes =
+    queuePosition > 1 ? (queuePosition - 1) * averageWaitMinutes : 0;
 
   const intake = reservation.intakeAnswer
     ? (() => {
@@ -171,6 +178,9 @@ export default async function AdminReservationDetailPage({
             <>
               <p className="text-sm text-muted-foreground">
                 全{queueTotal}人中 {queuePosition}番目
+              </p>
+              <p className="text-sm text-muted-foreground">
+                待ち時間目安: 約{estimatedWaitMinutes}分
               </p>
               <div className="h-2 w-full rounded bg-muted">
                 <div

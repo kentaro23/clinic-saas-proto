@@ -15,6 +15,7 @@ type ReservationRow = {
   queueNumber: number | null;
   queueOrder: number | null;
   waitStatus: string;
+  estimatedWaitMinutes: number;
 };
 
 type SlotGroup = {
@@ -31,6 +32,7 @@ export default function WaitlistPage() {
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const statusOptions = [
     { value: "waiting", label: "待ち" },
@@ -93,6 +95,19 @@ export default function WaitlistPage() {
     await fetchWaitlist(date || undefined);
   };
 
+  const bulkUpdateStatus = async (status: string) => {
+    if (selectedIds.length === 0) return;
+    setBulkUpdating(true);
+    await fetch("/api/admin/reservations/wait-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reservationIds: selectedIds, waitStatus: status })
+    });
+    setBulkUpdating(false);
+    setSelectedIds([]);
+    await fetchWaitlist(date || undefined);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -137,6 +152,22 @@ export default function WaitlistPage() {
           >
             選択に呼び出し
           </Button>
+          <Separator orientation="vertical" className="h-6" />
+          <div className="flex flex-wrap items-center gap-1">
+            {statusOptions.map((status) => (
+              <Button
+                key={`bulk-${status.value}`}
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={bulkUpdating || selectedIds.length === 0}
+                onClick={() => bulkUpdateStatus(status.value)}
+                className="h-8 rounded-full px-3 text-xs font-medium"
+              >
+                選択を{status.label}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -175,6 +206,9 @@ export default function WaitlistPage() {
                             #{reservation.queueOrder ?? reservation.queueNumber ?? index + 1}
                           </span>{" "}
                           {reservation.patientName}（{reservation.patientPhone}）
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            目安 {reservation.estimatedWaitMinutes}分
+                          </span>
                         </div>
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="flex items-center gap-2">

@@ -5,6 +5,7 @@ import { getOrCreateClinic } from "@/lib/clinic";
 import { getJstDayRange, getJstHour, toJstDateString } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 import { calculateSlots } from "@/lib/slots";
+import { calculateAverageWaitMinutes } from "@/lib/wait";
 
 export async function GET(request: Request) {
   if (!isAdminAuthenticated()) {
@@ -40,6 +41,7 @@ export async function GET(request: Request) {
     reservations,
     mode: bookingMode
   });
+  const averageWaitMinutes = calculateAverageWaitMinutes(rules, dateStr);
 
   const isSessionMode = bookingMode === "session";
   const slotMap = new Map<string, typeof slots[0]>();
@@ -94,7 +96,10 @@ export async function GET(request: Request) {
         patientPhone: reservation.patientPhone,
         queueNumber: reservation.queueNumber,
         queueOrder: reservation.queueOrder,
-        waitStatus: reservation.waitStatus
+        waitStatus: reservation.waitStatus,
+        estimatedWaitMinutes:
+          Math.max((reservation.queueOrder ?? reservation.queueNumber ?? 1) - 1, 0) *
+          averageWaitMinutes
       }))
     };
   });
