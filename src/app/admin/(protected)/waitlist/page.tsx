@@ -123,15 +123,17 @@ export default function WaitlistPage() {
             variant="outline"
             disabled={sending || selectedIds.length === 0}
             onClick={() => sendBulk("reminder")}
-            className="border-emerald-500 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:border-border disabled:text-muted-foreground"
+            className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 disabled:border-border disabled:text-muted-foreground"
           >
             選択にリマインド
           </Button>
           <Button
             type="button"
             size="sm"
+            variant="outline"
             disabled={sending || selectedIds.length === 0}
             onClick={() => sendBulk("call")}
+            className="border-sky-300 text-sky-700 hover:bg-sky-50 disabled:border-border disabled:text-muted-foreground"
           >
             選択に呼び出し
           </Button>
@@ -180,44 +182,53 @@ export default function WaitlistPage() {
                             type="button"
                             aria-pressed={selectedIds.includes(reservation.id)}
                             onClick={() => toggleSelection(reservation.id)}
-                            className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs transition ${
+                            className={`flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-semibold transition ${
                               selectedIds.includes(reservation.id)
                                 ? "border-primary bg-primary text-primary-foreground"
                                 : "border-input bg-background text-muted-foreground hover:bg-muted"
                             }`}
                           >
-                            {selectedIds.includes(reservation.id) ? "●" : "○"}
+                            {selectedIds.includes(reservation.id) ? "✓" : ""}
                           </button>
                           <span className="text-xs text-muted-foreground">選択</span>
                         </div>
                         <Separator orientation="vertical" className="h-6" />
                         <div className="flex flex-wrap items-center gap-1">
-                          {statusOptions.map((status) => (
-                            <Button
-                              key={status.value}
-                              type="button"
-                              size="sm"
-                              variant={
-                                reservation.waitStatus === status.value
-                                  ? "default"
-                                  : "outline"
-                              }
-                              className={
-                                status.value === "waiting"
-                                  ? "border-amber-400 text-amber-700 hover:bg-amber-50"
-                                  : status.value === "called"
-                                    ? "border-blue-400 text-blue-700 hover:bg-blue-50"
-                                    : status.value === "arrived"
-                                      ? "border-emerald-400 text-emerald-700 hover:bg-emerald-50"
-                                      : "border-slate-400 text-slate-700 hover:bg-slate-50"
-                              }
-                              onClick={() =>
-                                handleStatusChange(reservation.id, status.value)
-                              }
-                            >
-                              {status.label}
-                            </Button>
-                          ))}
+                          {statusOptions.map((status) => {
+                            const isActive = reservation.waitStatus === status.value;
+                            const base =
+                              "h-8 rounded-full px-3 text-xs font-medium transition";
+                            const color =
+                              status.value === "waiting"
+                                ? isActive
+                                  ? "border-amber-500 bg-amber-50 text-amber-700"
+                                  : "border-amber-200 text-amber-700 hover:bg-amber-50"
+                                : status.value === "called"
+                                  ? isActive
+                                    ? "border-sky-500 bg-sky-50 text-sky-700"
+                                    : "border-sky-200 text-sky-700 hover:bg-sky-50"
+                                  : status.value === "arrived"
+                                    ? isActive
+                                      ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                      : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                    : isActive
+                                      ? "border-slate-500 bg-slate-50 text-slate-700"
+                                      : "border-slate-200 text-slate-700 hover:bg-slate-50";
+                            return (
+                              <Button
+                                key={status.value}
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className={`${base} ${color}`}
+                                onClick={() =>
+                                  handleStatusChange(reservation.id, status.value)
+                                }
+                              >
+                                {status.label}
+                              </Button>
+                            );
+                          })}
                         </div>
                           <Button
                             type="button"
