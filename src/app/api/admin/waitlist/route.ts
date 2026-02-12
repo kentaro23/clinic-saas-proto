@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isAdminAuthenticated } from "@/lib/auth";
 import { getOrCreateClinic } from "@/lib/clinic";
-import { getJstDayRange, toJstDateString } from "@/lib/dates";
+import { getJstDayRange, getJstHour, toJstDateString } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 import { calculateSlots } from "@/lib/slots";
 
@@ -41,12 +41,24 @@ export async function GET(request: Request) {
     mode: bookingMode
   });
 
+  const isSessionMode = bookingMode === "session";
   const slotMap = new Map<string, typeof slots[0]>();
-  slots.forEach((slot) => slotMap.set(slot.slotStart.toISOString(), slot));
+  slots.forEach((slot) => {
+    const key = isSessionMode
+      ? slot.label === "午前の部"
+        ? "am"
+        : "pm"
+      : slot.slotStart.toISOString();
+    slotMap.set(key, slot);
+  });
 
   const reservationGroups = new Map<string, typeof reservations>();
   reservations.forEach((reservation) => {
-    const key = reservation.slotStart.toISOString();
+    const key = isSessionMode
+      ? getJstHour(reservation.slotStart) < 12
+        ? "am"
+        : "pm"
+      : reservation.slotStart.toISOString();
     const group = reservationGroups.get(key) ?? [];
     group.push(reservation);
     reservationGroups.set(key, group);
@@ -71,8 +83,9 @@ export async function GET(request: Request) {
     );
 
     return {
-      slotStart: key,
-      label: slot?.label ?? null,
+      slotStart: slot?.slotStart.toISOString() ?? key,
+      label:
+        slot?.label ?? (isSessionMode ? (key === "am" ? "午前の部" : "午後の部") : null),
       capacity: slot?.capacity ?? groupReservations.length,
       remaining: slot?.remaining ?? 0,
       reservations: groupReservations.map((reservation) => ({
