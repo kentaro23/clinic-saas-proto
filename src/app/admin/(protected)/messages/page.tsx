@@ -22,7 +22,9 @@ export default async function AdminMessagesPage() {
           <p className="text-sm text-muted-foreground">リマインド/呼び出し通知の記録一覧です。</p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
-          <SendReminderButton />
+          <div className="pt-5">
+            <SendReminderButton />
+          </div>
           <SendCallButton />
         </div>
       </div>

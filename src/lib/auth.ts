@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 
 export const ADMIN_USERNAME = "admin";
 export const ADMIN_PASSWORD = "demo123";
-export const ADMIN_SESSION_COOKIE = "clinic_demo_admin";
+export const ADMIN_SESSION_COOKIE = "demo_admin";
 
 export function isAdminSession() {
   const cookieStore = cookies();
@@ -11,7 +11,7 @@ export function isAdminSession() {
 }
 import { redirect } from "next/navigation";
 
-const COOKIE_NAME = "demo_admin";
+const COOKIE_NAME = ADMIN_SESSION_COOKIE;
 const ADMIN_USER = process.env.DEMO_ADMIN_USER ?? "admin";
 const ADMIN_PASS = process.env.DEMO_ADMIN_PASS ?? "admin123";
 
