@@ -5,9 +5,7 @@ export const ADMIN_PASSWORD = "demo123";
 export const ADMIN_SESSION_COOKIE = "demo_admin";
 
 export function isAdminSession() {
-  const cookieStore = cookies();
-  const session = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
-  return session === "ok";
+  return isAdminAuthenticated();
 }
 import { redirect } from "next/navigation";
 
