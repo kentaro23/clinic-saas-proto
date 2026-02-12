@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 
@@ -30,7 +30,7 @@ declare global {
   }
 }
 
-export default function BookingPage() {
+function BookingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rescheduleId = searchParams.get("rescheduleId");
@@ -327,5 +327,13 @@ export default function BookingPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-muted/40 px-4 py-10" />}>
+      <BookingPageContent />
+    </Suspense>
   );
 }
