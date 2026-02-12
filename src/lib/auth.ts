@@ -34,7 +34,8 @@ export const clearAdminSession = () => {
 };
 
 export const isAdminAuthenticated = () => {
-  return cookies().get(COOKIE_NAME)?.value === "signed-in";
+  const value = cookies().get(COOKIE_NAME)?.value;
+  return value === "signed-in" || value === "ok";
 };
 
 export const requireAdmin = () => {

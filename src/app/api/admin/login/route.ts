@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(ADMIN_SESSION_COOKIE, "ok", {
+  response.cookies.set(ADMIN_SESSION_COOKIE, "signed-in", {
     httpOnly: true,
     path: "/",
     maxAge: 60 * 60 * 24 * 7
