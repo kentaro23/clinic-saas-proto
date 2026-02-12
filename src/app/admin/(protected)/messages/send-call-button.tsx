@@ -48,7 +48,7 @@ export function SendCallButton() {
           className="h-9 w-24"
         />
       </div>
-      <Button onClick={handleSend} disabled={loading}>
+      <Button onClick={handleSend} disabled={loading} className="h-9">
         {loading ? "送信中..." : "呼び出し通知を送信"}
       </Button>
     </div>

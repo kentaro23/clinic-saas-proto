@@ -20,7 +20,7 @@ export function SendReminderButton() {
   };
 
   return (
-    <Button onClick={handleSend} disabled={loading}>
+    <Button onClick={handleSend} disabled={loading} className="h-9">
       {loading ? "送信中..." : "今すぐリマインド送信"}
     </Button>
   );
