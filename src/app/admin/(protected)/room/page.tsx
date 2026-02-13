@@ -14,6 +14,7 @@ type ReservationRow = {
   queueNumber: number | null;
   queueOrder: number | null;
   waitStatus: string;
+  currentRoomId: string | null;
 };
 
 type SlotGroup = {
@@ -22,6 +23,12 @@ type SlotGroup = {
   capacity: number;
   remaining: number;
   reservations: ReservationRow[];
+};
+
+type Room = {
+  id: string;
+  name: string;
+  doctorName: string | null;
 };
 
 const statusLabel = (status: string) => {
@@ -42,8 +49,21 @@ const statusLabel = (status: string) => {
 export default function AdminRoomPage() {
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState<SlotGroup[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [roomName, setRoomName] = useState("");
+  const [roomDoctor, setRoomDoctor] = useState("");
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [working, setWorking] = useState(false);
+
+  const fetchRooms = async () => {
+    const response = await fetch("/api/admin/rooms");
+    const data = await response.json();
+    setRooms(data.rooms ?? []);
+    if (!selectedRoomId && data.rooms?.length) {
+      setSelectedRoomId(data.rooms[0].id);
+    }
+  };
 
   const fetchWaitlist = async (targetDate?: string) => {
     setLoading(true);
@@ -56,41 +76,66 @@ export default function AdminRoomPage() {
 
   useEffect(() => {
     fetchWaitlist();
+    fetchRooms();
   }, []);
 
   const sortedSlots = useMemo(() => slots, [slots]);
 
   const setCurrent = async (reservationId: string) => {
+    if (!selectedRoomId) return;
     setWorking(true);
     await fetch("/api/admin/room", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "set-current", reservationId })
+      body: JSON.stringify({ action: "set-current", reservationId, roomId: selectedRoomId })
     });
     setWorking(false);
     await fetchWaitlist(date || undefined);
   };
 
   const shiftCurrent = async (reservationId: string, direction: "next" | "prev") => {
+    if (!selectedRoomId) return;
     setWorking(true);
     await fetch("/api/admin/room", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "shift", reservationId, direction })
+      body: JSON.stringify({ action: "shift", reservationId, direction, roomId: selectedRoomId })
     });
     setWorking(false);
     await fetchWaitlist(date || undefined);
   };
 
   const finishCurrent = async (reservationId: string) => {
+    if (!selectedRoomId) return;
     setWorking(true);
     await fetch("/api/admin/room", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "finish", reservationId })
+      body: JSON.stringify({ action: "finish", reservationId, roomId: selectedRoomId })
     });
     setWorking(false);
     await fetchWaitlist(date || undefined);
+  };
+
+  const createRoom = async () => {
+    if (!roomName.trim()) return;
+    await fetch("/api/admin/rooms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: roomName, doctorName: roomDoctor })
+    });
+    setRoomName("");
+    setRoomDoctor("");
+    await fetchRooms();
+  };
+
+  const updateRoom = async (id: string, payload: Partial<Room>) => {
+    await fetch(`/api/admin/rooms/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    await fetchRooms();
   };
 
   return (
@@ -120,6 +165,65 @@ export default function AdminRoomPage() {
         </div>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>診察室の管理</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-3">
+            <Input
+              placeholder="診察室名（例: 診察室A）"
+              value={roomName}
+              onChange={(event) => setRoomName(event.target.value)}
+            />
+            <Input
+              placeholder="担当医（任意）"
+              value={roomDoctor}
+              onChange={(event) => setRoomDoctor(event.target.value)}
+            />
+            <Button type="button" onClick={createRoom} disabled={!roomName.trim()}>
+              診察室を追加
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {rooms.length === 0 ? (
+              <p className="text-sm text-muted-foreground">診察室がまだありません。</p>
+            ) : (
+              rooms.map((room) => (
+                <Button
+                  key={room.id}
+                  type="button"
+                  size="sm"
+                  variant={selectedRoomId === room.id ? "default" : "outline"}
+                  onClick={() => setSelectedRoomId(room.id)}
+                >
+                  {room.name}
+                  {room.doctorName ? `（${room.doctorName}）` : ""}
+                </Button>
+              ))
+            )}
+          </div>
+          {selectedRoomId ? (
+            <div className="grid gap-2 md:grid-cols-2">
+              <Input
+                value={rooms.find((room) => room.id === selectedRoomId)?.name ?? ""}
+                onChange={(event) =>
+                  updateRoom(selectedRoomId, { name: event.target.value })
+                }
+                placeholder="診察室名"
+              />
+              <Input
+                value={rooms.find((room) => room.id === selectedRoomId)?.doctorName ?? ""}
+                onChange={(event) =>
+                  updateRoom(selectedRoomId, { doctorName: event.target.value })
+                }
+                placeholder="担当医"
+              />
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
       {loading ? (
         <p className="text-sm text-muted-foreground">読み込み中...</p>
       ) : sortedSlots.length === 0 ? (
@@ -132,7 +236,9 @@ export default function AdminRoomPage() {
               (reservation) => reservation.waitStatus !== "done"
             );
             const currentIndex = activeList.findIndex(
-              (reservation) => reservation.waitStatus === "arrived"
+              (reservation) =>
+                reservation.waitStatus === "arrived" &&
+                reservation.currentRoomId === selectedRoomId
             );
             const current = currentIndex >= 0 ? activeList[currentIndex] : null;
             const prev = currentIndex > 0 ? activeList[currentIndex - 1] : null;
@@ -218,7 +324,7 @@ export default function AdminRoomPage() {
                               type="button"
                               size="sm"
                               variant="outline"
-                              disabled={working}
+                              disabled={working || !selectedRoomId}
                               onClick={() => setCurrent(reservation.id)}
                             >
                               診察中にする

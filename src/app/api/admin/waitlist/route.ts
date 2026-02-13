@@ -97,6 +97,7 @@ export async function GET(request: Request) {
         queueNumber: reservation.queueNumber,
         queueOrder: reservation.queueOrder,
         waitStatus: reservation.waitStatus,
+        currentRoomId: reservation.currentRoomId,
         estimatedWaitMinutes:
           Math.max((reservation.queueOrder ?? reservation.queueNumber ?? 1) - 1, 0) *
           averageWaitMinutes

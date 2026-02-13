@@ -15,10 +15,14 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const action = body?.action as string | undefined;
   const reservationId = body?.reservationId as string | undefined;
+  const roomId = body?.roomId as string | undefined;
   const direction = body?.direction as Direction | undefined;
 
   if (!reservationId) {
     return NextResponse.json({ error: "reservationId required" }, { status: 400 });
+  }
+  if (!roomId) {
+    return NextResponse.json({ error: "roomId required" }, { status: 400 });
   }
 
   const reservation = await prisma.reservation.findUnique({
@@ -65,18 +69,21 @@ export async function POST(request: Request) {
 
   if (action === "set-current") {
     const previousArrived = active.filter(
-      (item) => item.waitStatus === "arrived" && item.id !== reservation.id
+      (item) =>
+        item.waitStatus === "arrived" &&
+        item.currentRoomId === roomId &&
+        item.id !== reservation.id
     );
     if (previousArrived.length > 0) {
       await prisma.reservation.updateMany({
         where: { id: { in: previousArrived.map((item) => item.id) } },
-        data: { waitStatus: "done" }
+        data: { waitStatus: "done", currentRoomId: null }
       });
     }
 
     const updated = await prisma.reservation.update({
       where: { id: reservation.id },
-      data: { waitStatus: "arrived" }
+      data: { waitStatus: "arrived", currentRoomId: roomId }
     });
 
     const logs = [
@@ -105,7 +112,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "direction required" }, { status: 400 });
     }
 
-    const currentIndex = active.findIndex((item) => item.id === reservation.id);
+    const currentIndex = active.findIndex(
+      (item) => item.id === reservation.id && item.currentRoomId === roomId
+    );
     if (currentIndex < 0) {
       return NextResponse.json({ error: "Current not found" }, { status: 404 });
     }
@@ -117,11 +126,11 @@ export async function POST(request: Request) {
 
     await prisma.reservation.updateMany({
       where: { id: { in: [reservation.id, target.id] } },
-      data: { waitStatus: "arrived" }
+      data: { waitStatus: "arrived", currentRoomId: roomId }
     });
     await prisma.reservation.update({
       where: { id: reservation.id },
-      data: { waitStatus: "done" }
+      data: { waitStatus: "done", currentRoomId: null }
     });
 
     await prisma.reservationLog.createMany({
@@ -153,7 +162,7 @@ export async function POST(request: Request) {
   if (action === "finish") {
     await prisma.reservation.update({
       where: { id: reservation.id },
-      data: { waitStatus: "done" }
+      data: { waitStatus: "done", currentRoomId: null }
     });
     await prisma.reservationLog.create({
       data: {

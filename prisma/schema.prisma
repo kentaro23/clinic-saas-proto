@@ -15,6 +15,7 @@ model Clinic {
   slotRules    SlotRule[]
   reservations Reservation[]
   slotRuleTemplates SlotRuleTemplate[]
+  rooms        Room[]
 }
 
 model SlotRule {
@@ -44,6 +45,8 @@ model Reservation {
   id          String            @id @default(cuid())
   clinicId    String
   clinic      Clinic            @relation(fields: [clinicId], references: [id])
+  currentRoomId String?
+  currentRoom  Room?            @relation(fields: [currentRoomId], references: [id])
   patientName String
   patientPhone String
   purpose     String
@@ -60,6 +63,17 @@ model Reservation {
   intakeAnswer IntakeAnswer?
   messageLogs  MessageLog[]
   reservationLogs ReservationLog[]
+}
+
+model Room {
+  id         String        @id @default(cuid())
+  clinicId   String
+  clinic     Clinic        @relation(fields: [clinicId], references: [id])
+  name       String
+  doctorName String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  reservations Reservation[]
 }
 
 model IntakeAnswer {
