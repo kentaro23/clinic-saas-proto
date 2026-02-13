@@ -19,6 +19,7 @@ type ReservationRow = {
   slotStart: string;
   queueNumber: number | null;
   status: string;
+  waitStatus: string;
   intakeAnswer?: { id: string } | null;
 };
 
@@ -48,6 +49,20 @@ export default function AdminOverviewPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const waitStatusLabel = (status: string) => {
+    switch (status) {
+      case "waiting":
+        return "待ち";
+      case "called":
+        return "呼出中";
+      case "arrived":
+        return "診察中";
+      case "done":
+        return "完了";
+      default:
+        return status;
+    }
+  };
 
   const statusOptions = [
     { value: "waiting", label: "待ち" },
@@ -196,10 +211,8 @@ export default function AdminOverviewPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={reservation.status === "cancelled" ? "destructive" : "outline"}
-                      >
-                        {reservation.status === "cancelled" ? "キャンセル" : "予約済み"}
+                      <Badge variant="outline">
+                        {waitStatusLabel(reservation.waitStatus)}
                       </Badge>
                     </TableCell>
                   </TableRow>

@@ -27,8 +27,22 @@ export default async function AdminReservationsPage({
       }
     },
     orderBy: { slotStart: "asc" },
-    include: { intakeAnswer: true }
+      include: { intakeAnswer: true }
   });
+  const waitStatusLabel = (status: string) => {
+    switch (status) {
+      case "waiting":
+        return "待ち";
+      case "called":
+        return "呼出中";
+      case "arrived":
+        return "診察中";
+      case "done":
+        return "完了";
+      default:
+        return status;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -89,10 +103,8 @@ export default async function AdminReservationsPage({
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={reservation.status === "cancelled" ? "destructive" : "outline"}
-                      >
-                        {reservation.status === "cancelled" ? "キャンセル" : "予約済み"}
+                      <Badge variant="outline">
+                        {waitStatusLabel(reservation.waitStatus)}
                       </Badge>
                     </TableCell>
                   </TableRow>

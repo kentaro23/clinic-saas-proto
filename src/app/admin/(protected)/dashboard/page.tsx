@@ -109,10 +109,13 @@ export default async function AdminDashboardPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={reservation.status === "cancelled" ? "destructive" : "outline"}
-                      >
-                        {reservation.status === "cancelled" ? "キャンセル" : "予約済み"}
+                      <Badge variant="outline">
+                        {{
+                          waiting: "待ち",
+                          called: "呼出中",
+                          arrived: "診察中",
+                          done: "完了"
+                        }[reservation.waitStatus] ?? reservation.waitStatus}
                       </Badge>
                     </TableCell>
                   </TableRow>
