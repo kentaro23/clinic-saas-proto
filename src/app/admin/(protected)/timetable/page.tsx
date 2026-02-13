@@ -47,7 +47,7 @@ const statusLabel = (status: string) => {
     case "called":
       return "呼出中";
     case "arrived":
-      return "来院済み";
+      return "診察中";
     case "done":
       return "完了";
     default:

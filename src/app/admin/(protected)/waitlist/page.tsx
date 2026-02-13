@@ -37,7 +37,7 @@ export default function WaitlistPage() {
   const statusOptions = [
     { value: "waiting", label: "待ち" },
     { value: "called", label: "呼出中" },
-    { value: "arrived", label: "来院済み" },
+    { value: "arrived", label: "診察中" },
     { value: "done", label: "完了" }
   ];
 

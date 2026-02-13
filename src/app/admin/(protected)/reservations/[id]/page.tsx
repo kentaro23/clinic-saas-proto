@@ -92,7 +92,7 @@ export default async function AdminReservationDetailPage({
   const waitStatusLabel = {
     waiting: "待ち",
     called: "呼出中",
-    arrived: "来院済み",
+    arrived: "診察中",
     done: "完了"
   }[reservation.waitStatus] ?? reservation.waitStatus;
 
