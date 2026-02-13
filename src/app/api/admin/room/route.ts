@@ -112,8 +112,7 @@ export async function POST(request: Request) {
       if (positionAhead === 5 && !target.reminder5NotifiedAt) {
         const channel = await sendMessage(
           target,
-          "あと5人で順番が近づきます。来院の準備をお願いします。",
-          "reminder_5"
+          "あと5人で順番が近づきます。来院の準備をお願いします。"
         );
         await prisma.reservation.update({
           where: { id: target.id },
@@ -132,8 +131,7 @@ export async function POST(request: Request) {
       if (positionAhead === 3 && !target.reminder3NotifiedAt) {
         const channel = await sendMessage(
           target,
-          "あと3人で順番が近づきます。院内でお待ちください。",
-          "reminder_3"
+          "あと3人で順番が近づきます。院内でお待ちください。"
         );
         await prisma.reservation.update({
           where: { id: target.id },
@@ -158,8 +156,7 @@ export async function POST(request: Request) {
     }
     const channel = await sendMessage(
       target,
-      "診察の順番になりました。受付までお越しください。",
-      "call_now"
+      "診察の順番になりました。受付までお越しください。"
     );
     await prisma.reservation.update({
       where: { id: target.id },
