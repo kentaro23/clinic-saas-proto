@@ -201,6 +201,7 @@ export async function GET(request: Request) {
         patientName: reservation.patientName,
         slotStart: reservation.slotStart.toISOString(),
         status: reservation.status,
+        arrivalStatus: reservation.arrivalStatus,
         waitStatus: reservation.waitStatus,
         queueNumber: reservation.queueNumber,
         queuePosition: queueInfo?.position ?? null,

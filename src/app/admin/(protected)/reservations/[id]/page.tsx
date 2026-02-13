@@ -8,6 +8,7 @@ import { formatDateTime, formatVisitPurpose } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { calculateAverageWaitMinutes } from "@/lib/wait";
 
+import { ArrivalStatusControls } from "./arrival-status-controls";
 import { CancelButton } from "./cancel-button";
 import { ReschedulePanel } from "./reschedule-panel";
 import { WaitStatusControls } from "./wait-status-controls";
@@ -19,10 +20,10 @@ export default async function AdminReservationDetailPage({
 }: {
   params: { id: string };
 }) {
-  const reservation = await prisma.reservation.findUnique({
+  const reservation = (await prisma.reservation.findUnique({
     where: { id: params.id },
-    include: { intakeAnswer: true, messageLogs: true, reservationLogs: true }
-  });
+    include: { intakeAnswer: true, messageLogs: true, reservationLogs: true } as any
+  })) as any;
 
   if (!reservation) {
     notFound();
@@ -33,7 +34,7 @@ export default async function AdminReservationDetailPage({
   const rules = await prisma.slotRule.findMany({
     where: { clinicId: reservation.clinicId }
   });
-  const dayReservations = await prisma.reservation.findMany({
+  const dayReservations = (await prisma.reservation.findMany({
     where: {
       status: "booked",
       slotStart: {
@@ -41,8 +42,8 @@ export default async function AdminReservationDetailPage({
         lte: end
       }
     },
-    select: { id: true, queueNumber: true, slotStart: true }
-  });
+    select: { id: true, queueNumber: true, slotStart: true } as any
+  })) as any[];
   const sorted = [...dayReservations].sort((a, b) => {
     if (a.queueNumber != null && b.queueNumber != null) {
       return a.queueNumber - b.queueNumber;
@@ -89,14 +90,29 @@ export default async function AdminReservationDetailPage({
     return log.type;
   };
 
-  const waitStatusLabel = {
+  const waitStatusLabelMap: Record<string, string> = {
     waiting: "待ち",
     called: "呼出中",
     arrived: "診察中",
     done: "完了"
-  }[reservation.waitStatus] ?? reservation.waitStatus;
+  };
+  const waitStatusLabel =
+    waitStatusLabelMap[reservation.waitStatus as string] ?? reservation.waitStatus;
   const arrivalStatusLabel =
     reservation.arrivalStatus === "arrived" ? "来院済み" : "未来院";
+
+  const messageLogs = (reservation.messageLogs ?? []) as Array<{
+    id: string;
+    type: string;
+    channel: string;
+    sentAt: Date;
+  }>;
+  const reservationLogs = (reservation.reservationLogs ?? []) as Array<{
+    id: string;
+    type: string;
+    payload: string;
+    createdAt: Date;
+  }>;
 
   return (
     <div className="space-y-6">
@@ -165,6 +181,18 @@ export default async function AdminReservationDetailPage({
           <WaitStatusControls
             reservationId={reservation.id}
             currentStatus={reservation.waitStatus}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>来院ステータス管理</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ArrivalStatusControls
+            reservationId={reservation.id}
+            currentStatus={reservation.arrivalStatus}
           />
         </CardContent>
       </Card>
@@ -262,7 +290,7 @@ export default async function AdminReservationDetailPage({
           <CardTitle>送信ログ</CardTitle>
         </CardHeader>
         <CardContent>
-          {reservation.messageLogs.length === 0 ? (
+          {messageLogs.length === 0 ? (
             <p className="text-sm text-muted-foreground">送信ログはありません。</p>
           ) : (
             <Table>
@@ -274,7 +302,7 @@ export default async function AdminReservationDetailPage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {reservation.messageLogs.map((log) => (
+                {messageLogs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell>{log.type}</TableCell>
                     <TableCell>{log.channel}</TableCell>
@@ -292,7 +320,7 @@ export default async function AdminReservationDetailPage({
           <CardTitle>変更履歴</CardTitle>
         </CardHeader>
         <CardContent>
-          {reservation.reservationLogs.length === 0 ? (
+          {reservationLogs.length === 0 ? (
             <p className="text-sm text-muted-foreground">履歴はありません。</p>
           ) : (
             <Table>
@@ -303,8 +331,11 @@ export default async function AdminReservationDetailPage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {reservation.reservationLogs
-                  .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                {reservationLogs
+                  .sort(
+                    (a: { createdAt: Date }, b: { createdAt: Date }) =>
+                      b.createdAt.getTime() - a.createdAt.getTime()
+                  )
                   .map((log) => (
                     <TableRow key={log.id}>
                       <TableCell>{formatLog(log)}</TableCell>

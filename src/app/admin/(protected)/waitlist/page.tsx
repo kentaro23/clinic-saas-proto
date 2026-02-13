@@ -111,6 +111,15 @@ export default function WaitlistPage() {
     await fetchWaitlist(date || undefined);
   };
 
+  const handleArrivalChange = async (id: string, status: "arrived" | "not_arrived") => {
+    await fetch(`/api/admin/reservations/${id}/arrival-status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ arrivalStatus: status })
+    });
+    await fetchWaitlist(date || undefined);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -232,15 +241,30 @@ export default function WaitlistPage() {
                         <Separator orientation="vertical" className="h-6" />
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">来院</span>
-                          <span
-                            className={`rounded-full border px-2 py-0.5 text-xs ${
-                              reservation.arrivalStatus === "arrived"
-                                ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                                : "border-slate-200 bg-slate-50 text-slate-600"
-                            }`}
-                          >
-                            {arrivalLabel(reservation.arrivalStatus)}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleArrivalChange(reservation.id, "arrived")}
+                              className={`rounded-full border px-2 py-0.5 text-xs ${
+                                reservation.arrivalStatus === "arrived"
+                                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                  : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                              }`}
+                            >
+                              来院済み
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleArrivalChange(reservation.id, "not_arrived")}
+                              className={`rounded-full border px-2 py-0.5 text-xs ${
+                                reservation.arrivalStatus === "not_arrived"
+                                  ? "border-slate-500 bg-slate-50 text-slate-700"
+                                  : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              未来院
+                            </button>
+                          </div>
                         </div>
                         <Separator orientation="vertical" className="h-6" />
                         <div className="flex flex-wrap items-center gap-1">

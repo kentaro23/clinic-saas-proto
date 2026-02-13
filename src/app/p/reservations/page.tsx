@@ -13,6 +13,7 @@ type ReservationSummary = {
   patientName: string;
   slotStart: string;
   status: string;
+  arrivalStatus: string;
   waitStatus: string;
   queueNumber: number | null;
   queuePosition: number | null;
@@ -44,6 +45,7 @@ export default function ReservationHistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [origin, setOrigin] = useState("");
 
   useEffect(() => {
     const initLiff = async () => {
@@ -90,6 +92,12 @@ export default function ReservationHistoryPage() {
     };
 
     initLiff();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
   }, []);
 
   useEffect(() => {
@@ -164,6 +172,12 @@ export default function ReservationHistoryPage() {
             const position = reservation.queuePosition ?? 0;
             const percent =
               total > 0 && position > 0 ? Math.round((position / total) * 100) : 0;
+            const checkinUrl = origin ? `${origin}/p/checkin/${reservation.id}` : "";
+            const qrSrc = checkinUrl
+              ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                  checkinUrl
+                )}`
+              : "";
             return (
               <Card key={reservation.id}>
                 <CardHeader>
@@ -179,6 +193,10 @@ export default function ReservationHistoryPage() {
                   <div className="text-sm">
                     <span className="text-muted-foreground">ステータス：</span>
                     {reservation.status === "cancelled" ? "キャンセル" : "予約済み"}
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">来院：</span>
+                    {reservation.arrivalStatus === "arrived" ? "来院済み" : "未来院"}
                   </div>
                   {total > 0 ? (
                     <div className="space-y-2">
@@ -223,6 +241,18 @@ export default function ReservationHistoryPage() {
                       {actionId === reservation.id ? "処理中..." : "キャンセル"}
                     </Button>
                   </div>
+                  {reservation.arrivalStatus !== "arrived" && qrSrc ? (
+                    <div className="rounded-md border bg-muted/20 p-3">
+                      <div className="text-xs text-muted-foreground">
+                        受付でこちらのQRを提示してください。
+                      </div>
+                      <img
+                        src={qrSrc}
+                        alt="チェックインQR"
+                        className="mt-2 h-32 w-32"
+                      />
+                    </div>
+                  ) : null}
                 </CardContent>
               </Card>
             );
