@@ -4,6 +4,7 @@ const navItems = [
   { href: "/admin/dashboard", label: "ダッシュボード" },
   { href: "/admin/overview", label: "予約・待ち" },
   { href: "/admin/room", label: "診察室" },
+  { href: "/admin/doctors", label: "医師一覧" },
   { href: "/admin/timetable", label: "タイムテーブル" },
   { href: "/admin/messages", label: "送信ログ" },
   { href: "/admin/settings/slots", label: "枠設定" }
