@@ -107,8 +107,11 @@ export async function GET(request: Request) {
     where: { lineUserId },
     orderBy: { slotStart: "desc" }
   });
+  const visibleReservations = reservations.filter(
+    (reservation) => !["arrived", "done"].includes(reservation.waitStatus)
+  );
 
-  const clinicId = reservations[0]?.clinicId;
+  const clinicId = visibleReservations[0]?.clinicId ?? reservations[0]?.clinicId;
   const clinic =
     (clinicId && (await prisma.clinic.findUnique({ where: { id: clinicId } }))) ||
     (await getOrCreateClinic());
@@ -119,7 +122,7 @@ export async function GET(request: Request) {
   const averageWaitMap = new Map<string, number>();
 
   const slotStarts = Array.from(
-    new Set(reservations.map((reservation) => reservation.slotStart.toISOString()))
+    new Set(visibleReservations.map((reservation) => reservation.slotStart.toISOString()))
   );
 
   const queueMap = new Map<string, { position: number; total: number }>();
@@ -128,7 +131,8 @@ export async function GET(request: Request) {
     const slotReservations = await prisma.reservation.findMany({
       where: {
         status: "booked",
-        slotStart
+        slotStart,
+        waitStatus: { notIn: ["arrived", "done"] }
       },
       select: { id: true, queueOrder: true, queueNumber: true, slotStart: true }
     });
@@ -150,7 +154,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    reservations: reservations.map((reservation) => {
+    reservations: visibleReservations.map((reservation) => {
       const queueInfo = queueMap.get(reservation.id);
       return {
         id: reservation.id,
