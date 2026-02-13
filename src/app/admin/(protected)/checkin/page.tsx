@@ -21,6 +21,7 @@ declare global {
 export default function AdminCheckinPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const zxingControlsRef = useRef<{ stop: () => void } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [manualId, setManualId] = useState("");
   const [scanning, setScanning] = useState(false);
@@ -29,6 +30,8 @@ export default function AdminCheckinPage() {
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    zxingControlsRef.current?.stop();
+    zxingControlsRef.current = null;
     setScanning(false);
   };
 
@@ -51,47 +54,64 @@ export default function AdminCheckinPage() {
   };
 
   const startScan = async () => {
-    if (!window.BarcodeDetector) {
-      setError("この端末ではQR読み取りに対応していません。手入力をご利用ください。");
-      return;
-    }
+    if (scanning) return;
     setError(null);
     setResult(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setScanning(true);
+      if (window.BarcodeDetector) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        setScanning(true);
 
-      const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
-      const scan = async () => {
-        if (!videoRef.current || !streamRef.current) return;
-        const video = videoRef.current;
-        if (video.readyState >= 2) {
-          try {
-            const codes = await detector.detect(video);
-            const code = codes[0]?.rawValue;
-            if (code) {
-              stopStream();
-              const reservationId = code.split("/").pop() ?? code;
-              await handleCheckin(reservationId);
-              return;
+        const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+        const scan = async () => {
+          if (!videoRef.current || !streamRef.current) return;
+          const video = videoRef.current;
+          if (video.readyState >= 2) {
+            try {
+              const codes = await detector.detect(video);
+              const code = codes[0]?.rawValue;
+              if (code) {
+                stopStream();
+                const reservationId = code.split("/").pop() ?? code;
+                await handleCheckin(reservationId);
+                return;
+              }
+            } catch {
+              // ignore detection errors, keep scanning
             }
-          } catch {
-            // ignore detection errors, keep scanning
+          }
+          if (streamRef.current) {
+            requestAnimationFrame(scan);
+          }
+        };
+        requestAnimationFrame(scan);
+        return;
+      }
+
+      const { BrowserMultiFormatReader } = await import("@zxing/browser");
+      const reader = new BrowserMultiFormatReader();
+      setScanning(true);
+      const controls = await reader.decodeFromVideoDevice(
+        undefined,
+        videoRef.current!,
+        async (result) => {
+          if (result) {
+            stopStream();
+            const raw = result.getText();
+            const reservationId = raw.split("/").pop() ?? raw;
+            await handleCheckin(reservationId);
           }
         }
-        if (streamRef.current) {
-          requestAnimationFrame(scan);
-        }
-      };
-      requestAnimationFrame(scan);
+      );
+      zxingControlsRef.current = controls;
     } catch {
       setError("カメラの起動に失敗しました。権限を確認してください。");
     }
@@ -121,11 +141,9 @@ export default function AdminCheckinPage() {
           </div>
           <div className="rounded-md border bg-muted/20 p-3">
             <video ref={videoRef} className="h-56 w-full rounded-md object-cover" />
-            {!window.BarcodeDetector ? (
-              <p className="mt-2 text-xs text-muted-foreground">
-                この端末はQR読み取りに対応していません。
-              </p>
-            ) : null}
+            <p className="mt-2 text-xs text-muted-foreground">
+              カメラの許可を求められたら「許可」を選択してください。
+            </p>
           </div>
         </CardContent>
       </Card>

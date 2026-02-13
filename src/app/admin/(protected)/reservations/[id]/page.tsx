@@ -137,6 +137,10 @@ export default async function AdminReservationDetailPage({
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div>
+            <p className="text-sm text-muted-foreground">予約ID</p>
+            <p className="font-medium">{reservation.id}</p>
+          </div>
+          <div>
             <p className="text-sm text-muted-foreground">氏名</p>
             <p className="font-medium">{reservation.patientName}</p>
           </div>

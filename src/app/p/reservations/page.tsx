@@ -186,6 +186,9 @@ export default function ReservationHistoryPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  <div className="text-xs text-muted-foreground">
+                    予約ID: {reservation.id}
+                  </div>
                   <div className="text-sm">
                     <span className="text-muted-foreground">氏名：</span>
                     {reservation.patientName}
