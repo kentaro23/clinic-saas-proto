@@ -3,6 +3,7 @@ import Link from "next/link";
 const navItems = [
   { href: "/admin/dashboard", label: "ダッシュボード" },
   { href: "/admin/overview", label: "予約・待ち" },
+  { href: "/admin/checkin", label: "受付チェックイン" },
   { href: "/admin/room", label: "診察室" },
   { href: "/admin/doctors", label: "医師一覧" },
   { href: "/admin/timetable", label: "タイムテーブル" },
