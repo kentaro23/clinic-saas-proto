@@ -15,6 +15,7 @@ type ReservationRow = {
   queueNumber: number | null;
   queueOrder: number | null;
   waitStatus: string;
+  arrivalStatus: string;
   slotStart: string;
 };
 
@@ -101,6 +102,9 @@ export default function DoctorsPage() {
                       <div className="text-xs text-muted-foreground">
                         {formatTime(new Date(doctor.current.slotStart))} / {doctor.current.patientPhone}
                       </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        来院: {doctor.current.arrivalStatus === "arrived" ? "済み" : "未来院"}
+                      </div>
                     </div>
                   ) : (
                     <div className="mt-1 text-sm text-muted-foreground">
@@ -125,7 +129,8 @@ export default function DoctorsPage() {
                             #{patient.queueOrder ?? patient.queueNumber ?? "-"} {patient.patientName}
                           </Link>
                           <span className="text-xs text-muted-foreground">
-                            {formatTime(new Date(patient.slotStart))}
+                            {formatTime(new Date(patient.slotStart))} /{" "}
+                            {patient.arrivalStatus === "arrived" ? "来院済み" : "未来院"}
                           </span>
                         </div>
                       ))}

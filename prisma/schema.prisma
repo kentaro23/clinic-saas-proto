@@ -56,6 +56,7 @@ model Reservation {
   queueOrder  Int?
   callNotifiedAt DateTime?
   waitStatus  String            @default("waiting")
+  arrivalStatus String          @default("not_arrived")
   slotStart   DateTime
   status      String            @default("booked")
   createdAt   DateTime          @default(now())

@@ -15,6 +15,7 @@ type ReservationRow = {
   queueNumber: number | null;
   queueOrder: number | null;
   waitStatus: string;
+  arrivalStatus: string;
   estimatedWaitMinutes: number;
 };
 
@@ -40,6 +41,8 @@ export default function WaitlistPage() {
     { value: "arrived", label: "診察中" },
     { value: "done", label: "完了" }
   ];
+  const arrivalLabel = (status: string) =>
+    status === "arrived" ? "来院済み" : "未来院";
 
   const fetchWaitlist = async (targetDate?: string) => {
     setLoading(true);
@@ -210,7 +213,7 @@ export default function WaitlistPage() {
                             目安 {reservation.estimatedWaitMinutes}分
                           </span>
                         </div>
-                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -225,6 +228,19 @@ export default function WaitlistPage() {
                             {selectedIds.includes(reservation.id) ? "✓" : ""}
                           </button>
                           <span className="text-xs text-muted-foreground">選択</span>
+                        </div>
+                        <Separator orientation="vertical" className="h-6" />
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">来院</span>
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-xs ${
+                              reservation.arrivalStatus === "arrived"
+                                ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                                : "border-slate-200 bg-slate-50 text-slate-600"
+                            }`}
+                          >
+                            {arrivalLabel(reservation.arrivalStatus)}
+                          </span>
                         </div>
                         <Separator orientation="vertical" className="h-6" />
                         <div className="flex flex-wrap items-center gap-1">

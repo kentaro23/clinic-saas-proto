@@ -15,6 +15,7 @@ type ReservationRow = {
   queueNumber: number | null;
   queueOrder: number | null;
   waitStatus: string;
+  arrivalStatus: string;
 };
 
 type SlotGroup = {
@@ -54,6 +55,8 @@ const statusLabel = (status: string) => {
       return status;
   }
 };
+const arrivalLabel = (status: string) =>
+  status === "arrived" ? "来院済み" : "未来院";
 
 export default function WaitlistTimetablePage() {
   const [date, setDate] = useState("");
@@ -143,13 +146,24 @@ export default function WaitlistTimetablePage() {
                               <span className="font-medium">
                                 #{order} {reservation.patientName}
                               </span>
-                              <span
-                                className={`rounded-full border px-2 py-0.5 ${statusStyle(
-                                  reservation.waitStatus
-                                )}`}
-                              >
-                                {statusLabel(reservation.waitStatus)}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`rounded-full border px-2 py-0.5 text-[11px] ${
+                                    reservation.arrivalStatus === "arrived"
+                                      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                                      : "border-slate-200 bg-slate-50 text-slate-600"
+                                  }`}
+                                >
+                                  {arrivalLabel(reservation.arrivalStatus)}
+                                </span>
+                                <span
+                                  className={`rounded-full border px-2 py-0.5 ${statusStyle(
+                                    reservation.waitStatus
+                                  )}`}
+                                >
+                                  {statusLabel(reservation.waitStatus)}
+                                </span>
+                              </div>
                             </div>
                             <div className="mt-1 text-[11px] text-muted-foreground">
                               {reservation.patientPhone}

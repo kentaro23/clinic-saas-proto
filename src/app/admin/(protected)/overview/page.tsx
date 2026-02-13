@@ -20,6 +20,7 @@ type ReservationRow = {
   queueNumber: number | null;
   status: string;
   waitStatus: string;
+  arrivalStatus: string;
   intakeAnswer?: { id: string } | null;
 };
 
@@ -30,6 +31,7 @@ type WaitlistRow = {
   queueNumber: number | null;
   queueOrder: number | null;
   waitStatus: string;
+  arrivalStatus: string;
   estimatedWaitMinutes: number;
 };
 
@@ -63,6 +65,8 @@ export default function AdminOverviewPage() {
         return status;
     }
   };
+  const arrivalLabel = (status: string) =>
+    status === "arrived" ? "来院済み" : "未来院";
 
   const statusOptions = [
     { value: "waiting", label: "待ち" },
@@ -188,6 +192,7 @@ export default function AdminOverviewPage() {
                   <TableHead>患者</TableHead>
                   <TableHead>目的</TableHead>
                   <TableHead>問診</TableHead>
+                  <TableHead>来院</TableHead>
                   <TableHead>ステータス</TableHead>
                 </TableRow>
               </TableHeader>
@@ -208,6 +213,11 @@ export default function AdminOverviewPage() {
                     <TableCell>
                       <Badge variant={reservation.intakeAnswer ? "default" : "secondary"}>
                         {reservation.intakeAnswer ? "完了" : "未完了"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {arrivalLabel(reservation.arrivalStatus)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -316,6 +326,19 @@ export default function AdminOverviewPage() {
                                   {selectedIds.includes(reservation.id) ? "✓" : ""}
                                 </button>
                                 <span className="text-xs text-muted-foreground">選択</span>
+                              </div>
+                              <Separator orientation="vertical" className="h-6" />
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">来院</span>
+                                <span
+                                  className={`rounded-full border px-2 py-0.5 text-xs ${
+                                    reservation.arrivalStatus === "arrived"
+                                      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                                      : "border-slate-200 bg-slate-50 text-slate-600"
+                                  }`}
+                                >
+                                  {arrivalLabel(reservation.arrivalStatus)}
+                                </span>
                               </div>
                               <Separator orientation="vertical" className="h-6" />
                               <div className="flex flex-wrap items-center gap-1">

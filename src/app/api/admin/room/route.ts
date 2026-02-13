@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
     const updated = await prisma.reservation.update({
       where: { id: reservation.id },
-      data: { waitStatus: "arrived", currentRoomId: roomId }
+      data: { waitStatus: "arrived", arrivalStatus: "arrived", currentRoomId: roomId }
     });
 
     const logs = [
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
 
     await prisma.reservation.updateMany({
       where: { id: { in: [reservation.id, target.id] } },
-      data: { waitStatus: "arrived", currentRoomId: roomId }
+      data: { waitStatus: "arrived", arrivalStatus: "arrived", currentRoomId: roomId }
     });
     await prisma.reservation.update({
       where: { id: reservation.id },

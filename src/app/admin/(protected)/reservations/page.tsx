@@ -73,16 +73,17 @@ export default async function AdminReservationsPage({
             <p className="text-sm text-muted-foreground">予約がありません。</p>
           ) : (
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>番号</TableHead>
-                  <TableHead>時刻</TableHead>
-                  <TableHead>患者</TableHead>
-                  <TableHead>目的</TableHead>
-                  <TableHead>問診</TableHead>
-                  <TableHead>ステータス</TableHead>
-                </TableRow>
-              </TableHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead>番号</TableHead>
+                <TableHead>時刻</TableHead>
+                <TableHead>患者</TableHead>
+                <TableHead>目的</TableHead>
+                <TableHead>問診</TableHead>
+                <TableHead>来院</TableHead>
+                <TableHead>ステータス</TableHead>
+              </TableRow>
+            </TableHeader>
               <TableBody>
                 {reservations.map((reservation) => (
                   <TableRow key={reservation.id}>
@@ -100,6 +101,11 @@ export default async function AdminReservationsPage({
                     <TableCell>
                       <Badge variant={reservation.intakeAnswer ? "default" : "secondary"}>
                         {reservation.intakeAnswer ? "完了" : "未完了"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {reservation.arrivalStatus === "arrived" ? "来院済み" : "未来院"}
                       </Badge>
                     </TableCell>
                     <TableCell>

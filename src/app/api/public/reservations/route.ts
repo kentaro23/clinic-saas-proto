@@ -86,7 +86,8 @@ export async function POST(request: Request) {
       queueNumber,
       queueOrder,
       slotStart,
-      waitStatus: "waiting"
+      waitStatus: "waiting",
+      arrivalStatus: "not_arrived"
     }
   });
 

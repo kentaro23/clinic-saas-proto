@@ -95,6 +95,8 @@ export default async function AdminReservationDetailPage({
     arrived: "診察中",
     done: "完了"
   }[reservation.waitStatus] ?? reservation.waitStatus;
+  const arrivalStatusLabel =
+    reservation.arrivalStatus === "arrived" ? "来院済み" : "未来院";
 
   return (
     <div className="space-y-6">
@@ -147,6 +149,10 @@ export default async function AdminReservationDetailPage({
           <div>
             <p className="text-sm text-muted-foreground">待ちステータス</p>
             <p className="font-medium">{waitStatusLabel}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">来院ステータス</p>
+            <p className="font-medium">{arrivalStatusLabel}</p>
           </div>
         </CardContent>
       </Card>

@@ -86,6 +86,7 @@ export default async function AdminDashboardPage() {
                   <TableHead>患者</TableHead>
                   <TableHead>目的</TableHead>
                   <TableHead>問診</TableHead>
+                  <TableHead>来院</TableHead>
                   <TableHead>ステータス</TableHead>
                 </TableRow>
               </TableHeader>
@@ -106,6 +107,11 @@ export default async function AdminDashboardPage() {
                     <TableCell>
                       <Badge variant={reservation.intakeAnswer ? "default" : "secondary"}>
                         {reservation.intakeAnswer ? "完了" : "未完了"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {reservation.arrivalStatus === "arrived" ? "来院済み" : "未来院"}
                       </Badge>
                     </TableCell>
                     <TableCell>
