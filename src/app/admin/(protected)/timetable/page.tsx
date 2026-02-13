@@ -117,7 +117,7 @@ export default function WaitlistTimetablePage() {
               return (
                 <div
                   key={slot.slotStart}
-                  className={`min-h-[260px] ${columnIndex > 0 ? "border-l" : ""}`}
+                  className={`min-h-[260px] bg-background ${columnIndex > 0 ? "border-l" : ""}`}
                 >
                   <div className="sticky top-0 z-10 border-b bg-background/95 px-4 py-3 backdrop-blur">
                     <div className="text-sm font-semibold">{label}</div>
