@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { getOrCreateClinic } from "@/lib/clinic";
 import { getJstDayRange, getJstHour, toJstDateString } from "@/lib/dates";
+import type { Reservation } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 import { sendLinePush } from "@/lib/line";
 
@@ -68,10 +70,10 @@ export async function POST(request: Request) {
   });
   const active = ordered.filter((item) => item.waitStatus !== "done");
 
-  const sendMessage = async (reservation: typeof reservation, message: string, type: string) => {
-    if (!reservation.lineUserId) return "line_mock";
+  const sendMessage = async (target: Reservation, message: string) => {
+    if (!target.lineUserId) return "line_mock";
     try {
-      await sendLinePush(reservation.lineUserId, message);
+      await sendLinePush(target.lineUserId, message);
       return "line";
     } catch {
       return "line_mock";
