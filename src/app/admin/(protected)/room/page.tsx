@@ -82,6 +82,17 @@ export default function AdminRoomPage() {
     await fetchWaitlist(date || undefined);
   };
 
+  const finishCurrent = async (reservationId: string) => {
+    setWorking(true);
+    await fetch("/api/admin/room", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "finish", reservationId })
+    });
+    setWorking(false);
+    await fetchWaitlist(date || undefined);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -171,6 +182,15 @@ export default function AdminRoomPage() {
                         onClick={() => current && shiftCurrent(current.id, "next")}
                       >
                         次の患者へ
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={!current || working}
+                        onClick={() => current && finishCurrent(current.id)}
+                      >
+                        診察を終了
                       </Button>
                     </div>
                   </div>

@@ -150,5 +150,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ currentId: target.id });
   }
 
+  if (action === "finish") {
+    await prisma.reservation.update({
+      where: { id: reservation.id },
+      data: { waitStatus: "done" }
+    });
+    await prisma.reservationLog.create({
+      data: {
+        reservationId: reservation.id,
+        type: "wait_status",
+        payload: JSON.stringify({
+          from: reservation.waitStatus,
+          to: "done",
+          by: "admin"
+        })
+      }
+    });
+    return NextResponse.json({ currentId: null });
+  }
+
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });
 }
