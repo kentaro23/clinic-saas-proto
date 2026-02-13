@@ -4,6 +4,7 @@ import { isAdminAuthenticated } from "@/lib/auth";
 import { getOrCreateClinic } from "@/lib/clinic";
 import { getJstDayRange, getJstHour, toJstDateString } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
+import { sendLinePush } from "@/lib/line";
 
 type Direction = "next" | "prev";
 
@@ -67,6 +68,111 @@ export async function POST(request: Request) {
   });
   const active = ordered.filter((item) => item.waitStatus !== "done");
 
+  const sendMessage = async (reservation: typeof reservation, message: string, type: string) => {
+    if (!reservation.lineUserId) return "line_mock";
+    try {
+      await sendLinePush(reservation.lineUserId, message);
+      return "line";
+    } catch {
+      return "line_mock";
+    }
+  };
+
+  const notifyQueue = async (groupKeyValue: string) => {
+    const latestReservations = await prisma.reservation.findMany({
+      where: {
+        clinicId: clinic.id,
+        status: "booked",
+        slotStart: {
+          gte: start,
+          lte: end
+        }
+      }
+    });
+    const latestGroup = latestReservations.filter(
+      (item) => getKey(item.slotStart) === groupKeyValue && item.waitStatus !== "done"
+    );
+    const latestOrdered = [...latestGroup].sort((a, b) => {
+      if (a.queueOrder != null && b.queueOrder != null) {
+        return a.queueOrder - b.queueOrder;
+      }
+      if (a.queueNumber != null && b.queueNumber != null) {
+        return a.queueNumber - b.queueNumber;
+      }
+      return a.slotStart.getTime() - b.slotStart.getTime();
+    });
+
+    for (let i = 0; i < latestOrdered.length; i += 1) {
+      const positionAhead = i;
+      const target = latestOrdered[i];
+      if (!target.lineUserId) continue;
+
+      if (positionAhead === 5 && !target.reminder5NotifiedAt) {
+        const channel = await sendMessage(
+          target,
+          "あと5人で順番が近づきます。来院の準備をお願いします。",
+          "reminder_5"
+        );
+        await prisma.reservation.update({
+          where: { id: target.id },
+          data: { reminder5NotifiedAt: new Date() }
+        });
+        await prisma.messageLog.create({
+          data: {
+            reservationId: target.id,
+            type: "reminder_5",
+            channel,
+            payload: JSON.stringify({ message: "あと5人通知" })
+          }
+        });
+      }
+
+      if (positionAhead === 3 && !target.reminder3NotifiedAt) {
+        const channel = await sendMessage(
+          target,
+          "あと3人で順番が近づきます。院内でお待ちください。",
+          "reminder_3"
+        );
+        await prisma.reservation.update({
+          where: { id: target.id },
+          data: { reminder3NotifiedAt: new Date() }
+        });
+        await prisma.messageLog.create({
+          data: {
+            reservationId: target.id,
+            type: "reminder_3",
+            channel,
+            payload: JSON.stringify({ message: "あと3人通知" })
+          }
+        });
+      }
+    }
+  };
+
+  const notifyCallNow = async (id: string) => {
+    const target = await prisma.reservation.findUnique({ where: { id } });
+    if (!target || !target.lineUserId || target.callNotifiedAt) {
+      return;
+    }
+    const channel = await sendMessage(
+      target,
+      "診察の順番になりました。受付までお越しください。",
+      "call_now"
+    );
+    await prisma.reservation.update({
+      where: { id: target.id },
+      data: { callNotifiedAt: new Date() }
+    });
+    await prisma.messageLog.create({
+      data: {
+        reservationId: target.id,
+        type: "call_now",
+        channel,
+        payload: JSON.stringify({ message: "呼び出し通知" })
+      }
+    });
+  };
+
   if (action === "set-current") {
     const previousArrived = active.filter(
       (item) =>
@@ -104,6 +210,8 @@ export async function POST(request: Request) {
     ];
     await prisma.reservationLog.createMany({ data: logs });
 
+    await notifyCallNow(updated.id);
+    await notifyQueue(groupKey);
     return NextResponse.json({ reservation: updated });
   }
 
@@ -156,6 +264,8 @@ export async function POST(request: Request) {
       ]
     });
 
+    await notifyCallNow(target.id);
+    await notifyQueue(groupKey);
     return NextResponse.json({ currentId: target.id });
   }
 
@@ -175,6 +285,7 @@ export async function POST(request: Request) {
         })
       }
     });
+    await notifyQueue(groupKey);
     return NextResponse.json({ currentId: null });
   }
 

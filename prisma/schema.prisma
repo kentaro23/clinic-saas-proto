@@ -55,6 +55,8 @@ model Reservation {
   queueNumber Int?
   queueOrder  Int?
   callNotifiedAt DateTime?
+  reminder5NotifiedAt DateTime?
+  reminder3NotifiedAt DateTime?
   waitStatus  String            @default("waiting")
   arrivalStatus String          @default("not_arrived")
   slotStart   DateTime
