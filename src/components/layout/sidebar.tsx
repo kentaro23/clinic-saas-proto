@@ -2,8 +2,7 @@ import Link from "next/link";
 
 const navItems = [
   { href: "/admin/dashboard", label: "ダッシュボード" },
-  { href: "/admin/reservations", label: "予約一覧" },
-  { href: "/admin/waitlist", label: "待ち一覧" },
+  { href: "/admin/overview", label: "予約・待ち" },
   { href: "/admin/room", label: "診察室" },
   { href: "/admin/timetable", label: "タイムテーブル" },
   { href: "/admin/messages", label: "送信ログ" },
