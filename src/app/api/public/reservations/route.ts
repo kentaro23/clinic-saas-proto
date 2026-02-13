@@ -103,10 +103,24 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "lineUserId required" }, { status: 400 });
   }
 
-  const reservations = await prisma.reservation.findMany({
+  let reservations = await prisma.reservation.findMany({
     where: { lineUserId },
     orderBy: { slotStart: "desc" }
   });
+
+  if (reservations.length === 0) {
+    const todayStr = toJstDateString(new Date());
+    const { start: todayStart } = getJstDayRange(todayStr);
+    reservations = await prisma.reservation.findMany({
+      where: {
+        lineUserId: null,
+        status: "booked",
+        waitStatus: { notIn: ["arrived", "done"] },
+        slotStart: { gte: todayStart }
+      },
+      orderBy: { slotStart: "asc" }
+    });
+  }
 
   const clinicId = reservations[0]?.clinicId;
   const clinic =
