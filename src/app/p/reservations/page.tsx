@@ -37,6 +37,10 @@ export default function ReservationHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [lineUserId, setLineUserId] = useState("");
   const [reservations, setReservations] = useState<ReservationSummary[]>([]);
+  const visibleReservations = reservations.filter(
+    (reservation) =>
+      !["arrived", "done"].includes(reservation.waitStatus ?? "waiting")
+  );
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -148,14 +152,14 @@ export default function ReservationHistoryPage() {
           <Card>
             <CardContent className="p-6 text-sm text-destructive">{error}</CardContent>
           </Card>
-        ) : reservations.length === 0 ? (
+        ) : visibleReservations.length === 0 ? (
           <Card>
             <CardContent className="p-6 text-sm text-muted-foreground">
               予約が見つかりませんでした。
             </CardContent>
           </Card>
         ) : (
-          reservations.map((reservation) => {
+          visibleReservations.map((reservation) => {
             const total = reservation.queueTotal ?? 0;
             const position = reservation.queuePosition ?? 0;
             const percent =
