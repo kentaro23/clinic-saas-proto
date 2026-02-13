@@ -282,6 +282,9 @@ function BookingPageContent() {
                     required={!isReschedule}
                     disabled={isReschedule}
                   />
+                <p className="text-xs text-muted-foreground">
+                  ハイフンなしで入力してください。（例: 09012345678）
+                </p>
                 </div>
               </div>
               <div className="space-y-1">

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { getOrCreateClinic } from "@/lib/clinic";
 import { getJstDayRange, toJstDateString } from "@/lib/dates";
+import { normalizePhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { reservationCreateSchema } from "@/lib/validators";
 
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
     data: {
       clinicId: parsed.data.clinicId ?? clinic.id,
       patientName: parsed.data.patientName,
-      patientPhone: parsed.data.patientPhone,
+      patientPhone: normalizePhone(parsed.data.patientPhone),
       purpose: parsed.data.purpose,
       cardNumber: parsed.data.cardNumber?.trim() || null,
       lineUserId: parsed.data.lineUserId?.trim() || null,

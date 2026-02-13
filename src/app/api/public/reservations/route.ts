@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getOrCreateClinic } from "@/lib/clinic";
 import { getJstDayRange, toJstDateString } from "@/lib/dates";
+import { normalizePhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { calculateSlots } from "@/lib/slots";
 import { calculateAverageWaitMinutes } from "@/lib/wait";
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
     data: {
       clinicId: clinic.id,
       patientName: parsed.data.patientName,
-      patientPhone: parsed.data.patientPhone,
+      patientPhone: normalizePhone(parsed.data.patientPhone),
       purpose: parsed.data.purpose,
       cardNumber: parsed.data.cardNumber?.trim() || null,
       lineUserId: parsed.data.lineUserId?.trim() || null,
@@ -107,6 +108,33 @@ export async function GET(request: Request) {
     where: { lineUserId },
     orderBy: { slotStart: "desc" }
   });
+
+  if (reservations.length > 0) {
+    const phoneCandidates = Array.from(
+      new Set(
+        reservations
+          .map((reservation) => reservation.patientPhone)
+          .filter(Boolean)
+          .flatMap((phone) => [phone, normalizePhone(phone)])
+      )
+    );
+    if (phoneCandidates.length > 0) {
+      const phoneReservations = await prisma.reservation.findMany({
+        where: {
+          patientPhone: { in: phoneCandidates }
+        },
+        orderBy: { slotStart: "desc" }
+      });
+      const merged = new Map<string, typeof reservations[0]>();
+      reservations.forEach((reservation) => merged.set(reservation.id, reservation));
+      phoneReservations.forEach((reservation) =>
+        merged.set(reservation.id, reservation)
+      );
+      reservations = Array.from(merged.values()).sort(
+        (a, b) => b.slotStart.getTime() - a.slotStart.getTime()
+      );
+    }
+  }
 
   if (reservations.length === 0) {
     const todayStr = toJstDateString(new Date());
