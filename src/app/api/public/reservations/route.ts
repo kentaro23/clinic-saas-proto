@@ -120,6 +120,13 @@ export async function GET(request: Request) {
       )
     );
     if (phoneCandidates.length > 0) {
+      await prisma.reservation.updateMany({
+        where: {
+          lineUserId: null,
+          patientPhone: { in: phoneCandidates }
+        },
+        data: { lineUserId }
+      });
       const phoneReservations = await prisma.reservation.findMany({
         where: {
           patientPhone: { in: phoneCandidates }
