@@ -22,6 +22,9 @@ export default function HomePage() {
           <Button variant="outline" asChild>
             <Link href="/p/reservations">患者：予約確認</Link>
           </Button>
+          <Button variant="outline" asChild>
+            <Link href="/display/call">呼び出し表示</Link>
+          </Button>
           <Button variant="secondary" asChild>
             <Link href="/admin/login">管理画面へ</Link>
           </Button>
