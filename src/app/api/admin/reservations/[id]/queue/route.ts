@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthenticated } from "@/lib/auth";
+import { getClinicIdFromRequest } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 
 type Params = {
@@ -13,6 +14,10 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   const body = await request.json().catch(() => ({}));
+  const clinicId = await getClinicIdFromRequest(request, body ?? undefined);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
   const direction = body?.direction as "up" | "down" | undefined;
   if (!direction || (direction !== "up" && direction !== "down")) {
     return NextResponse.json({ error: "Invalid direction" }, { status: 400 });
@@ -24,9 +29,13 @@ export async function POST(request: Request, { params }: Params) {
   if (!current) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  if (current.clinicId !== clinicId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
 
   const sameSlot = await prisma.reservation.findMany({
     where: {
+      clinicId,
       status: "booked",
       slotStart: current.slotStart
     },

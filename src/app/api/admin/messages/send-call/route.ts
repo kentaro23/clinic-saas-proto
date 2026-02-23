@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { getJstDayRange, toJstDateString } from "@/lib/dates";
+import { getClinicIdFromRequest } from "@/lib/admin";
 import { isAdminAuthenticated } from "@/lib/auth";
+import { getJstDayRange, toJstDateString } from "@/lib/dates";
 import { sendLinePush } from "@/lib/line";
 import { prisma } from "@/lib/prisma";
 
@@ -11,6 +12,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => ({}));
+  const clinicId = await getClinicIdFromRequest(request, body ?? undefined);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
   const dateParam = body?.date as string | undefined;
   const reservationIds = Array.isArray(body?.reservationIds)
     ? (body.reservationIds as string[])
@@ -31,11 +36,13 @@ export async function POST(request: Request) {
   const reservations = await prisma.reservation.findMany({
     where: useSelection
       ? {
+          clinicId,
           id: { in: reservationIds },
           status: "booked",
           lineUserId: { not: null }
         }
       : {
+          clinicId,
           status: "booked",
           queueNumber: {
             gte: currentNumber,
@@ -53,13 +60,18 @@ export async function POST(request: Request) {
   const notifiedIds: string[] = [];
   const logs: { reservationId: string; channel: string }[] = [];
 
+  const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
   for (const reservation of reservations) {
     if (!reservation.lineUserId) continue;
     try {
       const message = useSelection
         ? `まもなくお呼び出し予定です。あなたの番号: ${reservation.queueNumber}`
         : `まもなくお呼び出し予定です。現在の番号: ${currentNumber} / あなたの番号: ${reservation.queueNumber}`;
-      await sendLinePush(reservation.lineUserId, message);
+      await sendLinePush(
+        reservation.lineUserId,
+        message,
+        clinic?.lineChannelAccessToken
+      );
       notifiedIds.push(reservation.id);
       logs.push({ reservationId: reservation.id, channel: "line" });
     } catch {

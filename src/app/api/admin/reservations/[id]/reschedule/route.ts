@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthenticated } from "@/lib/auth";
+import { getClinicIdFromRequest } from "@/lib/admin";
 import { getJstDayRange, toJstDateString } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 import { calculateSlots } from "@/lib/slots";
@@ -14,6 +15,10 @@ export async function POST(
   }
 
   const body = await request.json();
+  const clinicId = await getClinicIdFromRequest(request, body ?? undefined);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
   const { slotStart } = body ?? {};
 
   if (!slotStart) {
@@ -26,6 +31,9 @@ export async function POST(
 
   if (!reservation) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (reservation.clinicId !== clinicId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   if (reservation.status !== "booked") {

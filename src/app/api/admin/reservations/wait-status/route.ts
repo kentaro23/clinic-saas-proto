@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthenticated } from "@/lib/auth";
+import { getClinicIdFromRequest } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 
 const allowedStatuses = new Set(["waiting", "called", "arrived", "done"]);
@@ -11,6 +12,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => ({}));
+  const clinicId = await getClinicIdFromRequest(request, body ?? undefined);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
   const reservationIds = Array.isArray(body?.reservationIds)
     ? (body.reservationIds as string[])
     : [];
@@ -24,7 +29,7 @@ export async function POST(request: Request) {
   }
 
   const reservations = await prisma.reservation.findMany({
-    where: { id: { in: reservationIds } },
+    where: { id: { in: reservationIds }, clinicId },
     select: { id: true, waitStatus: true }
   });
 
@@ -33,7 +38,7 @@ export async function POST(request: Request) {
   }
 
   await prisma.reservation.updateMany({
-    where: { id: { in: reservationIds } },
+    where: { id: { in: reservationIds }, clinicId },
     data: { waitStatus: nextStatus }
   });
 

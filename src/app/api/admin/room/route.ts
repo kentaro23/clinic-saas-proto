@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthenticated } from "@/lib/auth";
-import { getOrCreateClinic } from "@/lib/clinic";
+import { getClinicIdFromRequest } from "@/lib/admin";
 import { getJstDayRange, getJstHour, toJstDateString } from "@/lib/dates";
 import type { Reservation } from "@prisma/client";
 
@@ -20,6 +20,10 @@ export async function POST(request: Request) {
   const reservationId = body?.reservationId as string | undefined;
   const roomId = body?.roomId as string | undefined;
   const direction = body?.direction as Direction | undefined;
+  const clinicId = await getClinicIdFromRequest(request, body ?? undefined);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
 
   if (!reservationId) {
     return NextResponse.json({ error: "reservationId required" }, { status: 400 });
@@ -34,11 +38,14 @@ export async function POST(request: Request) {
   if (!reservation) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  if (reservation.clinicId !== clinicId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
 
-  const clinic =
-    (reservation.clinicId &&
-      (await prisma.clinic.findUnique({ where: { id: reservation.clinicId } }))) ||
-    (await getOrCreateClinic());
+  const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
+  if (!clinic) {
+    return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
+  }
   const bookingMode = clinic.bookingMode === "session" ? "session" : "time";
   const isSessionMode = bookingMode === "session";
 
@@ -73,7 +80,7 @@ export async function POST(request: Request) {
   const sendMessage = async (target: Reservation, message: string) => {
     if (!target.lineUserId) return "line_mock";
     try {
-      await sendLinePush(target.lineUserId, message);
+      await sendLinePush(target.lineUserId, message, clinic.lineChannelAccessToken);
       return "line";
     } catch {
       return "line_mock";

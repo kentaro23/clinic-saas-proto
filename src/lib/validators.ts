@@ -46,5 +46,9 @@ export const slotRuleSchema = z.object({
 });
 
 export const clinicSettingsSchema = z.object({
-  bookingMode: z.enum(["time", "session"])
+  bookingMode: z.enum(["time", "session"]),
+  lineChannelAccessToken: z.string().optional().nullable(),
+  lineChannelSecret: z.string().optional().nullable(),
+  liffBookingId: z.string().optional().nullable(),
+  liffReservationsId: z.string().optional().nullable()
 });

@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 
-import { getOrCreateClinic } from "@/lib/clinic";
+import { getClinicIdFromRequest } from "@/lib/admin";
+import { isAdminAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slotRuleSchema } from "@/lib/validators";
 
-export async function GET() {
-  const clinic = await getOrCreateClinic();
+export async function GET(request: Request) {
+  if (!isAdminAuthenticated()) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const clinicId = await getClinicIdFromRequest(request);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
   const rules = await prisma.slotRule.findMany({
-    where: { clinicId: clinic.id },
+    where: { clinicId },
     orderBy: [{ weekday: "asc" }, { startTime: "asc" }]
   });
   return NextResponse.json({ rules });
@@ -21,11 +28,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const clinic = await getOrCreateClinic();
+  const clinicId = await getClinicIdFromRequest(request, body ?? undefined);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
 
   const rule = await prisma.slotRule.create({
     data: {
-      clinicId: clinic.id,
+      clinicId,
       ...parsed.data
     }
   });

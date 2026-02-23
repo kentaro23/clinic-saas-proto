@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthenticated } from "@/lib/auth";
-import { getOrCreateClinic } from "@/lib/clinic";
+import { getClinicIdFromRequest } from "@/lib/admin";
 import { getJstDayRange, toJstDateString } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 
@@ -15,15 +15,18 @@ export async function GET(request: Request) {
   const dateStr = dateParam ?? toJstDateString(new Date());
   const { start, end } = getJstDayRange(dateStr);
 
-  const clinic = await getOrCreateClinic();
+  const clinicId = await getClinicIdFromRequest(request);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
   const rooms = await prisma.room.findMany({
-    where: { clinicId: clinic.id },
+    where: { clinicId },
     orderBy: { createdAt: "asc" }
   });
 
   const reservations = await prisma.reservation.findMany({
     where: {
-      clinicId: clinic.id,
+      clinicId,
       status: "booked",
       slotStart: { gte: start, lte: end }
     },

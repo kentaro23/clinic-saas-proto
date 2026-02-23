@@ -1,33 +1,46 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthenticated } from "@/lib/auth";
-import { getOrCreateClinic } from "@/lib/clinic";
+import { getClinicIdFromRequest } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 
 type Params = {
   params: { id: string };
 };
 
-export async function DELETE(_: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   if (!isAdminAuthenticated()) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const clinicId = await getClinicIdFromRequest(request);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
+  const template = await prisma.slotRuleTemplate.findUnique({
+    where: { id: params.id }
+  });
+  if (!template || template.clinicId !== clinicId) {
+    return NextResponse.json({ error: "Template not found" }, { status: 404 });
+  }
   await prisma.slotRuleTemplate.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });
 }
 
-export async function POST(_: Request, { params }: Params) {
+export async function POST(request: Request, { params }: Params) {
   if (!isAdminAuthenticated()) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const clinic = await getOrCreateClinic();
+  const clinicId = await getClinicIdFromRequest(request);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
   const template = await prisma.slotRuleTemplate.findUnique({
     where: { id: params.id }
   });
 
-  if (!template || template.clinicId !== clinic.id) {
+  if (!template || template.clinicId !== clinicId) {
     return NextResponse.json({ error: "Template not found" }, { status: 404 });
   }
 
@@ -58,10 +71,10 @@ export async function POST(_: Request, { params }: Params) {
     return NextResponse.json({ error: "Template empty" }, { status: 400 });
   }
 
-  await prisma.slotRule.deleteMany({ where: { clinicId: clinic.id } });
+  await prisma.slotRule.deleteMany({ where: { clinicId } });
   await prisma.slotRule.createMany({
     data: rules.map((rule) => ({
-      clinicId: clinic.id,
+      clinicId,
       weekday: rule.weekday,
       startTime: rule.startTime,
       endTime: rule.endTime,

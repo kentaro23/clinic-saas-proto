@@ -10,9 +10,10 @@ type LinePushPayload = {
 
 export async function sendLinePush(
   to: string,
-  message: string
+  message: string,
+  channelAccessToken?: string | null
 ): Promise<Record<string, unknown>> {
-  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  const token = channelAccessToken ?? process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token) {
     throw new Error("LINE_CHANNEL_ACCESS_TOKEN is not set.");
   }
@@ -46,9 +47,10 @@ type LineReplyPayload = {
 
 export async function sendLineReply(
   replyToken: string,
-  message: string
+  message: string,
+  channelAccessToken?: string | null
 ): Promise<Record<string, unknown>> {
-  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  const token = channelAccessToken ?? process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token) {
     throw new Error("LINE_CHANNEL_ACCESS_TOKEN is not set.");
   }

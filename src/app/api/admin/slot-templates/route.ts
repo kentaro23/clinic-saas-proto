@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthenticated } from "@/lib/auth";
-import { getOrCreateClinic } from "@/lib/clinic";
+import { getClinicIdFromRequest } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!isAdminAuthenticated()) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const clinic = await getOrCreateClinic();
+  const clinicId = await getClinicIdFromRequest(request);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
   const templates = await prisma.slotRuleTemplate.findMany({
-    where: { clinicId: clinic.id },
+    where: { clinicId },
     orderBy: { createdAt: "desc" }
   });
 
@@ -24,6 +27,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => null);
+  const clinicId = await getClinicIdFromRequest(request, body ?? undefined);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
   const name = body?.name as string | undefined;
   const rules = body?.rules as unknown;
 
@@ -31,10 +38,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const clinic = await getOrCreateClinic();
   const template = await prisma.slotRuleTemplate.create({
     data: {
-      clinicId: clinic.id,
+      clinicId,
       name,
       rules
     }

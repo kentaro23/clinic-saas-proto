@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthenticated } from "@/lib/auth";
+import { getClinicIdFromRequest } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 
 const allowedStatuses = new Set(["waiting", "called", "arrived", "done"]);
@@ -14,6 +15,10 @@ export async function POST(
   }
 
   const body = await request.json().catch(() => ({}));
+  const clinicId = await getClinicIdFromRequest(request, body ?? undefined);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
   const nextStatus = body?.waitStatus as string | undefined;
 
   if (!nextStatus || !allowedStatuses.has(nextStatus)) {
@@ -26,6 +31,9 @@ export async function POST(
 
   if (!reservation) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (reservation.clinicId !== clinicId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   const updated = await prisma.reservation.update({

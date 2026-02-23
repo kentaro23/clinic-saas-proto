@@ -1,16 +1,27 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthenticated } from "@/lib/auth";
+import { getClinicIdFromRequest } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   if (!isAdminAuthenticated()) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const clinicId = await getClinicIdFromRequest(request);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
+  const existing = await prisma.reservation.findUnique({
+    where: { id: params.id }
+  });
+  if (!existing || existing.clinicId !== clinicId) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   const reservation = await prisma.reservation.update({
     where: { id: params.id },
     data: { status: "cancelled" }

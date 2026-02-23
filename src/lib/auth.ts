@@ -1,23 +1,24 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-export const ADMIN_USERNAME = "admin";
-export const ADMIN_PASSWORD = "demo123";
 export const ADMIN_SESSION_COOKIE = "demo_admin";
+
+const COOKIE_NAME = ADMIN_SESSION_COOKIE;
 
 export function isAdminSession() {
   return isAdminAuthenticated();
 }
-import { redirect } from "next/navigation";
 
-const COOKIE_NAME = ADMIN_SESSION_COOKIE;
-const ADMIN_USER = process.env.DEMO_ADMIN_USER ?? "admin";
-const ADMIN_PASS = process.env.DEMO_ADMIN_PASS ?? "admin123";
+export const setAdminSession = (adminUserId: string) => {
+  cookies().set(COOKIE_NAME, `user:${adminUserId}`, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+  });
+};
 
-export const verifyAdminCredentials = (username: string, password: string) =>
-  username === ADMIN_USER && password === ADMIN_PASS;
-
-export const setAdminSession = () => {
-  cookies().set(COOKIE_NAME, "signed-in", {
+export const setSuperAdminSession = () => {
+  cookies().set(COOKIE_NAME, "super", {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
@@ -35,7 +36,15 @@ export const clearAdminSession = () => {
 
 export const isAdminAuthenticated = () => {
   const value = cookies().get(COOKIE_NAME)?.value;
-  return value === "signed-in" || value === "ok";
+  return Boolean(value);
+};
+
+export const getAdminSessionValue = () => {
+  return cookies().get(COOKIE_NAME)?.value ?? null;
+};
+
+export const isSuperAdminAuthenticated = () => {
+  return getAdminSessionValue() === "super";
 };
 
 export const requireAdmin = () => {

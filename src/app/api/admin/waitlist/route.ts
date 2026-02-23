@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthenticated } from "@/lib/auth";
-import { getOrCreateClinic } from "@/lib/clinic";
+import { getClinicIdFromRequest } from "@/lib/admin";
 import { getJstDayRange, getJstHour, toJstDateString } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 import { calculateSlots } from "@/lib/slots";
@@ -17,13 +17,16 @@ export async function GET(request: Request) {
   const dateStr = dateParam ?? toJstDateString(new Date());
   const { start, end } = getJstDayRange(dateStr);
 
-  const clinic = await getOrCreateClinic();
+  const clinicId = await getClinicIdFromRequest(request);
+  if (!clinicId) {
+    return NextResponse.json({ error: "Clinic not selected" }, { status: 403 });
+  }
   const rules = await prisma.slotRule.findMany({
-    where: { clinicId: clinic.id }
+    where: { clinicId }
   });
   const reservations = await prisma.reservation.findMany({
     where: {
-      clinicId: clinic.id,
+      clinicId,
       status: "booked",
       slotStart: {
         gte: start,
@@ -33,6 +36,10 @@ export async function GET(request: Request) {
     orderBy: { slotStart: "asc" }
   });
 
+  const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
+  if (!clinic) {
+    return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
+  }
   const bookingMode = clinic.bookingMode === "session" ? "session" : "time";
   const slots = calculateSlots({
     date: new Date(),

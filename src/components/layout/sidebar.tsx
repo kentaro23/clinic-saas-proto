@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { isSuperAdminAuthenticated } from "@/lib/auth";
+
 const navItems = [
   { href: "/admin/dashboard", label: "ダッシュボード" },
   { href: "/admin/overview", label: "予約・待ち" },
@@ -8,10 +10,15 @@ const navItems = [
   { href: "/admin/doctors", label: "医師一覧" },
   { href: "/admin/timetable", label: "タイムテーブル" },
   { href: "/admin/messages", label: "送信ログ" },
-  { href: "/admin/settings/slots", label: "枠設定" }
+  { href: "/admin/settings/slots", label: "枠設定" },
+  { href: "/admin/settings/clinic", label: "医院設定" }
 ];
 
 export function Sidebar() {
+  const isSuper = isSuperAdminAuthenticated();
+  const items = isSuper
+    ? [...navItems, { href: "/admin/platform", label: "医院管理(運営)" }]
+    : navItems;
   return (
     <aside className="w-64 shrink-0 border-r bg-background">
       <div className="px-6 py-6">
@@ -19,7 +26,7 @@ export function Sidebar() {
         <p className="text-xs text-muted-foreground">Demo Admin</p>
       </div>
       <nav className="flex flex-col gap-1 px-4">
-        {navItems.map((item) => (
+        {items.map((item) => (
           <Link
             key={item.href}
             href={item.href}
