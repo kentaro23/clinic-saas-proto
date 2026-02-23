@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type AdminUser = {
@@ -100,16 +100,12 @@ export function PlatformClinicForm() {
           <div>
             <Label>予約方式</Label>
             <Select
+              className="mt-2"
               value={form.bookingMode}
-              onValueChange={(value) => updateForm("bookingMode", value)}
+              onChange={(event) => updateForm("bookingMode", event.target.value)}
             >
-              <SelectTrigger className="mt-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="time">時間予約</SelectItem>
-                <SelectItem value="session">午前/午後</SelectItem>
-              </SelectContent>
+              <option value="time">時間予約</option>
+              <option value="session">午前/午後</option>
             </Select>
           </div>
           <div>

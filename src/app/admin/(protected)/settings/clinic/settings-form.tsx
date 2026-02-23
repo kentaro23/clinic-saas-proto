@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 
 type ClinicSettings = {
   id: string;
@@ -73,18 +73,14 @@ export function ClinicSettingsForm() {
         <div>
           <Label>予約方式</Label>
           <Select
+            className="mt-2 w-48"
             value={clinic.bookingMode}
-            onValueChange={(value) =>
-              updateField("bookingMode", value as ClinicSettings["bookingMode"])
+            onChange={(event) =>
+              updateField("bookingMode", event.target.value as ClinicSettings["bookingMode"])
             }
           >
-            <SelectTrigger className="mt-2 w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="time">時間予約</SelectItem>
-              <SelectItem value="session">午前/午後</SelectItem>
-            </SelectContent>
+            <option value="time">時間予約</option>
+            <option value="session">午前/午後</option>
           </Select>
         </div>
 
