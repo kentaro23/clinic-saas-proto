@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { getOrCreateClinic } from "@/lib/clinic";
 import { getJstDayRange, toJstDateString } from "@/lib/dates";
+import { formatDateTime, formatVisitPurpose } from "@/lib/format";
+import { sendLinePush } from "@/lib/line";
 import { normalizePhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { calculateSlots } from "@/lib/slots";
@@ -91,9 +93,57 @@ export async function POST(request: Request) {
     }
   });
 
+  const intakePath = `/p/intake/${reservation.id}`;
+  const confirmPath = "/p/reservations";
+  const proto = request.headers.get("x-forwarded-proto") ?? "https";
+  const host = request.headers.get("host") ?? "";
+  const baseUrl = host ? `${proto}://${host}` : "";
+  const confirmUrl = clinic.liffReservationsId
+    ? `https://liff.line.me/${clinic.liffReservationsId}`
+    : `${baseUrl}${confirmPath}`;
+  const intakeUrl = `${baseUrl}${intakePath}`;
+
+  if (reservation.lineUserId) {
+    const messageLines = [
+      `${clinic.name} 予約確定のお知らせ`,
+      `予約ID: ${reservation.id}`,
+      `日時: ${formatDateTime(slotStart)}`,
+      `区分: ${formatVisitPurpose(parsed.data.purpose)}`,
+      `お名前: ${reservation.patientName}`,
+      `受付番号: ${reservation.queueNumber}`,
+      `予約確認: ${confirmUrl}`,
+      `問診入力: ${intakeUrl}`
+    ];
+    const message = messageLines.join("\n");
+    try {
+      await sendLinePush(
+        reservation.lineUserId,
+        message,
+        clinic.lineChannelAccessToken
+      );
+      await prisma.messageLog.create({
+        data: {
+          reservationId: reservation.id,
+          type: "booking_confirm",
+          channel: "line",
+          payload: JSON.stringify({ message })
+        }
+      });
+    } catch {
+      await prisma.messageLog.create({
+        data: {
+          reservationId: reservation.id,
+          type: "booking_confirm",
+          channel: "line_mock",
+          payload: JSON.stringify({ message })
+        }
+      });
+    }
+  }
+
   return NextResponse.json({
     reservation,
-    intakeUrl: `/p/intake/${reservation.id}`
+    intakeUrl: intakePath
   });
 }
 
