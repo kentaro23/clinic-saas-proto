@@ -27,9 +27,12 @@ export async function POST(request: Request) {
   if (!adminUser) {
     const demoUser = process.env.DEMO_ADMIN_USER ?? "admin";
     const demoPass = process.env.DEMO_ADMIN_PASS ?? "admin123";
-    if (username === demoUser && password === demoPass) {
+    const legacyDemoPass = "demo123";
+    const isDemoUser = username === demoUser;
+    const isDemoPass = password === demoPass || password === legacyDemoPass;
+    if (isDemoUser && isDemoPass) {
       const clinic = await getOrCreateClinic();
-      const passwordHash = await hash(demoPass, 10);
+      const passwordHash = await hash(password, 10);
       adminUser = await prisma.adminUser.create({
         data: {
           clinicId: clinic.id,

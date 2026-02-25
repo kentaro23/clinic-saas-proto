@@ -58,7 +58,7 @@ export default function AdminLoginPage() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="demo123"
+                placeholder="admin123"
                 required
               />
             </div>
@@ -69,7 +69,7 @@ export default function AdminLoginPage() {
               {loading ? "確認中..." : "ログイン"}
             </Button>
             <p className="text-xs text-muted-foreground">
-              デモ用固定ID: admin / demo123
+              デモ用固定ID: admin / admin123（または demo123）
             </p>
           </form>
         </CardContent>
